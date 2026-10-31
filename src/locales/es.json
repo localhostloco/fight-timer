@@ -151,5 +151,14 @@
   "history.clear": "Borrar historial",
   "history.stopped": "detenida",
   "history.entry": "{rounds} asaltos · {total}",
-  "voice.test": "Asalto 1. Tres, dos, uno."
+  "voice.test": "Asalto 1. Tres, dos, uno.",
+  "editor.sport": "Deporte",
+  "sport.boxing": "Boxeo",
+  "sport.mma": "MMA",
+  "sport.muaythai": "Muay Thai",
+  "sport.kickboxing": "Kickboxing",
+  "sport.bjj": "BJJ",
+  "sport.wrestling": "Lucha",
+  "sport.hiit": "HIIT",
+  "sport.custom": "Otro"
 }

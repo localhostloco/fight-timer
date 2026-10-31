@@ -4,14 +4,15 @@ import { navigate } from '../router';
 import { t, fmtMinutes } from '../i18n';
 import { findPreset, savePreset } from '../store/presets';
 import { settings } from '../store/settings';
-import { DEFAULT_SOUNDS, LIMITS, SOUNDS, clamp, compile, formatShort, newId, simplePlan, totals, type RoundBlock, type SessionPlan, type Sound } from '../engine/plan';
+import { DEFAULT_SOUNDS, LIMITS, SOUNDS, clamp, compile, formatShort, newId, simplePlan, totals, type RoundBlock, type SessionPlan, type Sound, type Sport } from '../engine/plan';
 import { shareUrl } from '../engine/codec';
 import { audio, enableSound, startSession } from '../store/session';
 import { planName } from './Home';
 import { SoundGate } from './SoundGate';
+import { SPORTS, SportIcon } from './SportIcon';
 
 type Sounds = Required<SessionPlan['sounds']>;
-interface Draft { name: string; prep: number; warn: number; warmup: number; cooldown: number; blocks: RoundBlock[]; sounds: Sounds; advanced: boolean }
+interface Draft { name: string; sport: Sport; prep: number; warn: number; warmup: number; cooldown: number; blocks: RoundBlock[]; sounds: Sounds; advanced: boolean }
 
 const SOUND_EVENTS = ['start', 'end', 'warning', 'countdown', 'final'] as const;
 const DEFAULT_DRAFT_SOUNDS = DEFAULT_SOUNDS as Sounds;
@@ -20,7 +21,7 @@ const BLOCK_LIMIT = { min: 0, max: 3600 };
 function toDraft(p: SessionPlan): Draft {
   const sounds: Sounds = { ...DEFAULT_DRAFT_SOUNDS, ...p.sounds, warning: p.cues[0]?.sound ?? p.sounds.warning ?? 'clack' };
   const advanced = p.blocks.length > 1 || !!p.warmup || !!p.cooldown || p.blocks.some((b) => b.label || b.note);
-  return { name: p.builtIn ? planName(p) : p.name, prep: p.prep, warn: p.cues[0]?.at ?? 10, warmup: p.warmup ?? 0, cooldown: p.cooldown ?? 0, blocks: p.blocks.map((b) => ({ ...b })), sounds, advanced };
+  return { name: p.builtIn ? planName(p) : p.name, sport: p.sport ?? 'custom', prep: p.prep, warn: p.cues[0]?.at ?? 10, warmup: p.warmup ?? 0, cooldown: p.cooldown ?? 0, blocks: p.blocks.map((b) => ({ ...b })), sounds, advanced };
 }
 
 function blankDraft(): Draft {
@@ -29,7 +30,7 @@ function blankDraft(): Draft {
 
 export function toPlan(d: Draft, base?: SessionPlan): SessionPlan {
   const first = d.blocks[0]!;
-  const plan = simplePlan({ rounds: first.count, work: first.work, rest: first.rest, prep: d.prep, name: d.name, sport: base?.sport });
+  const plan = simplePlan({ rounds: first.count, work: first.work, rest: first.rest, prep: d.prep, name: d.name, sport: d.sport });
   if (base && !base.builtIn) plan.id = base.id;
   plan.blocks = d.blocks.map((b) => ({ ...b, count: clamp(b.count, LIMITS.rounds), work: clamp(b.work, LIMITS.work), rest: clamp(b.rest, LIMITS.rest), label: b.label?.trim() || undefined, note: b.note?.trim() || undefined }));
   plan.sounds = { ...d.sounds };
@@ -134,6 +135,14 @@ export function Editor({ id, shared }: { id?: string; shared?: SessionPlan }) {
         <span>{t('editor.name')}</span>
         <input type="text" value={d.name} placeholder={t('editor.name.placeholder')} onInput={(e) => patch({ name: (e.target as HTMLInputElement).value })} />
       </label>
+
+      <div class="choices sports" role="radiogroup" aria-label={t('editor.sport')}>
+        {SPORTS.map((sp) => (
+          <button key={sp} type="button" role="radio" aria-checked={d.sport === sp} class={`btn btn-sm btn-sport sport-${sp} ${d.sport === sp ? 'selected' : ''}`} onClick={() => patch({ sport: sp })}>
+            <SportIcon sport={sp} size={22} /> {t(`sport.${sp}` as const)}
+          </button>
+        ))}
+      </div>
 
       <div class="choices mode">
         <button class={`btn btn-sm ${!d.advanced ? 'btn-primary' : ''}`} aria-pressed={!d.advanced} onClick={() => patch({ advanced: false })}>{t('editor.simple')}</button>

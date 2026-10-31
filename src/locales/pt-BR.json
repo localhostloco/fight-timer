@@ -151,5 +151,14 @@
   "history.clear": "Limpar histórico",
   "history.stopped": "interrompida",
   "history.entry": "{rounds} rounds · {total}",
-  "voice.test": "Round 1. Três, dois, um."
+  "voice.test": "Round 1. Três, dois, um.",
+  "editor.sport": "Modalidade",
+  "sport.boxing": "Boxe",
+  "sport.mma": "MMA",
+  "sport.muaythai": "Muay Thai",
+  "sport.kickboxing": "Kickboxing",
+  "sport.bjj": "BJJ",
+  "sport.wrestling": "Wrestling",
+  "sport.hiit": "HIIT",
+  "sport.custom": "Outra"
 }

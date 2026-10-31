@@ -5,6 +5,7 @@ import { settings } from '../store/settings';
 import { formatShort, totalDuration, type SessionPlan } from '../engine/plan';
 import { startSession } from '../store/session';
 import { SoundGate } from './SoundGate';
+import { SportIcon } from './SportIcon';
 import { history } from '../store/history';
 import { locale } from '../i18n';
 
@@ -29,8 +30,11 @@ function Card({ p }: { p: SessionPlan }) {
   return (
     <li class={`card sport-${p.sport ?? 'custom'}`}>
       <button class="card-main" onClick={() => start(p)} aria-label={`${t('editor.start')}: ${planName(p)}`}>
-        <span class="card-name">{planName(p)}</span>
-        <span class="card-summary">{planSummary(p)}</span>
+        <SportIcon sport={p.sport} size={36} />
+        <span class="card-text">
+          <span class="card-name">{planName(p)}</span>
+          <span class="card-summary">{planSummary(p)}</span>
+        </span>
       </button>
       <div class="card-actions">
         <button class="btn btn-sm" onClick={() => navigate(`edit/${encodeURIComponent(p.id)}`)}>{t('home.edit')}</button>

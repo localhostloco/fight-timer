@@ -12,6 +12,7 @@ test('coach builds a short session, runs it and sees the summary', async ({ page
 
   await page.getByRole('button', { name: 'New session' }).click();
   await page.getByPlaceholder('Sparring Tuesday').fill('Smoke');
+  await page.getByRole('radio', { name: 'Muay Thai' }).click();
   const stepper = (label: string) => page.locator('.stepper', { hasText: label });
   // 2 rounds, 5 s work, 5 s rest, 0 s prep => 5 + 5 + 5 = 15 s
   await stepper('Rounds').getByRole('button', { name: 'Decrease' }).click();
@@ -57,6 +58,8 @@ test('coach builds a short session, runs it and sees the summary', async ({ page
   await expect(page.locator('.stats')).toContainText('2');
   await page.getByRole('button', { name: 'Home' }).click();
   await expect(page.locator('.card', { hasText: 'Smoke' })).toBeVisible();
+  await expect(page.locator('.card', { hasText: 'Smoke' })).toHaveClass(/sport-muaythai/);
+  await expect(page.locator('.card', { hasText: 'Smoke' }).locator('svg.sport-icon')).toBeVisible();
   await expect(page.locator('.history li', { hasText: 'Smoke' })).toContainText('2 rounds');
 });
 
