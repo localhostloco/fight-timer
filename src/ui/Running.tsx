@@ -4,7 +4,8 @@ import { navigate } from '../router';
 import { t, fmtMinutes } from '../i18n';
 import { formatClock, formatShort, totals, type PhaseKind } from '../engine/plan';
 import { settings } from '../store/settings';
-import { activePlan, pauseSession, restartPhase, skipPhase, snap, soundReady, startSession, stopSession, toggleSession, wake, wasLate } from '../store/session';
+import { activePlan, groupSnaps, heard, listening, pauseSession, restartPhase, skipPhase, snap, soundReady, startSession, stopSession, toggleSession, wake, wasLate } from '../store/session';
+import type { Snapshot } from '../engine/scheduler';
 import { updateSettings } from '../store/settings';
 
 const PHASE_KEY = { prep: 'phase.prep', warmup: 'phase.warmup', work: 'phase.work', rest: 'phase.rest', cooldown: 'phase.cooldown' } as const;
@@ -38,6 +39,21 @@ async function toggleFullscreen(): Promise<void> {
     if (document.fullscreenElement) await document.exitFullscreen();
     else await document.documentElement.requestFullscreen?.();
   } catch { /* not allowed here */ }
+}
+
+/** One panel per staggered group: its own phase colour, label and clock. */
+function GroupPanel({ g, n }: { g: Snapshot; n: number }) {
+  const ph = g.phase;
+  const done = g.status === 'finished';
+  const kind = done ? 'finished' : ph?.kind ?? 'prep';
+  const label = done ? t('phase.finished') : g.status === 'paused' ? t('phase.paused') : ph?.kind === 'work' ? t('run.round', { n: ph.index, total: ph.total }) : ph ? t(phaseKey(ph.kind)) : '';
+  return (
+    <div class={`group phase-${kind}`}>
+      <div class="group-name">{t('run.group', { n })}</div>
+      <div class="group-label">{label}</div>
+      <div class="clock group-clock">{done ? '00:00' : ph?.hideClock ? t('run.hidden') : formatClock(g.remainingMs / 1000, settings.value.showTenths)}</div>
+    </div>
+  );
 }
 
 export function Running() {
@@ -113,7 +129,11 @@ export function Running() {
         {phase.label && <span class="run-sub">{phase.label}</span>}
       </div>
       {phase.note && <div class="run-note">{phase.note}</div>}
-      <div class="clock" aria-live="polite" aria-atomic="true">{formatClock(remaining, settings.value.showTenths)}</div>
+      {groupSnaps.value.length > 1 ? (
+        <div class="groups">{groupSnaps.value.map((g, i) => <GroupPanel key={i} g={g} n={i + 1} />)}</div>
+      ) : (
+        <div class="clock" aria-live="polite" aria-atomic="true">{phase.hideClock ? t('run.hidden') : formatClock(remaining, settings.value.showTenths)}</div>
+      )}
       <div class="run-bottom">
         <span>{next}</span>
         <span>{t('run.elapsed', { time: formatShort(Math.floor(s.elapsedTotalMs / 1000)) })}</span>
@@ -125,6 +145,7 @@ export function Running() {
       {!soundReady.value && <div class="banner warn">{t('sound.blocked')}</div>}
       {!wake.supported && settings.value.keepAwake && <div class="banner">{t('run.wakelock.unsupported')}</div>}
       {wasLate.value && <div class="banner">{t('run.late')}</div>}
+      {listening.value && <div class="banner listen">🎤 {t('run.listening')}{heard.value ? ` · ${t('run.heard', { text: heard.value })}` : ''}</div>}
 
       <div class="controls" onClick={(e) => e.stopPropagation()}>
         {locked ? (

@@ -8,6 +8,7 @@ export interface Settings {
   keepAwake: boolean;
   showTenths: boolean;
   tvMode: boolean;
+  voiceControl: boolean;
   voice: { enabled: boolean; name?: string; rate: number };
   theme: 'dark';
   lastPlanId?: string;
@@ -24,6 +25,7 @@ const defaults = (): Settings => ({
   keepAwake: true,
   showTenths: false,
   tvMode: false,
+  voiceControl: false,
   voice: { enabled: false, rate: 1 },
   theme: 'dark',
 });

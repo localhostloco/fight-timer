@@ -24,6 +24,22 @@ describe('share codec', () => {
     expect(compile(back).map((p) => [p.kind, p.duration])).toEqual(compile(plan).map((p) => [p.kind, p.duration]));
   });
 
+  it('round-trips random cues, callouts and groups', () => {
+    const plan = simplePlan({ rounds: 2, work: 120, rest: 30, name: 'Reaction' });
+    plan.blocks[0]!.random = { minGap: 3, maxGap: 8, sound: 'whistle', hideClock: true };
+    plan.blocks[0]!.callouts = ['1 2', '1 2 3 2'];
+    plan.calloutEvery = 15; plan.calloutOrder = 'sequence';
+    plan.groups = { count: 2, offset: 20 };
+    const back = decodePlan(encodePlan(plan))!;
+    expect(back.blocks[0]!.random).toEqual(plan.blocks[0]!.random);
+    expect(back.blocks[0]!.callouts).toEqual(plan.blocks[0]!.callouts);
+    expect(back).toMatchObject({ calloutEvery: 15, calloutOrder: 'sequence', groups: { count: 2, offset: 20 } });
+    const hostile = decodePlan(btoa('{"v":1,"b":[{"c":1,"w":60,"r":0,"rd":[0,9999,"x",1],"co":[1,"ok"]}],"g":[5,1]}'))!;
+    expect(hostile.blocks[0]!.random).toEqual({ minGap: 2, maxGap: 120, sound: 'whistle', hideClock: true });
+    expect(hostile.blocks[0]!.callouts).toEqual(['ok']);
+    expect(hostile.groups).toBeUndefined();
+  });
+
   it('keeps a default simple plan short', () => {
     expect(encodePlan(simplePlan({ rounds: 12, work: 180, rest: 60 })).length).toBeLessThan(80);
   });

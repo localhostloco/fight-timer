@@ -2,7 +2,7 @@
 
 Free, offline, multilanguage round timer for fight coaches — boxing, MMA, Muay Thai, BJJ, HIIT. A static PWA hosted on GitHub Pages.
 
-Status: **v1** — everything in the MVP (simple mode, bells and 10-second clapper on the Web Audio clock, wake lock, offline PWA, pt-BR / en / es, built-in and saved presets) plus advanced mode with variable round blocks, labels and notes, warm-up and cool-down, share links with QR codes, TV mode and full screen, spoken countdown and notes, preset import/export and a local session history. See [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md) for research, features, UI, architecture, data model and the roadmap with its acceptance criteria. `CLAUDE.md` holds the working rules for coding sessions.
+Status: **v2** — combo callouts, random reaction cues with hidden clock, staggered multi-group timers, voice control (Chrome/Edge), custom sound upload, community locales via one JSON file (see `CONTRIBUTING.md`), on top of v1 and the MVP. v1 added (simple mode, bells and 10-second clapper on the Web Audio clock, wake lock, offline PWA, pt-BR / en / es, built-in and saved presets) plus advanced mode with variable round blocks, labels and notes, warm-up and cool-down, share links with QR codes, TV mode and full screen, spoken countdown and notes, preset import/export and a local session history. See [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md) for research, features, UI, architecture, data model and the roadmap with its acceptance criteria. `CLAUDE.md` holds the working rules for coding sessions.
 
 Live: https://localhostloco.github.io/fight-timer/
 

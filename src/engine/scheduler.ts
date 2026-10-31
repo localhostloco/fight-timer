@@ -52,9 +52,9 @@ export class Scheduler {
   }
   private emit(e: SchedulerEvent) { for (const fn of this.listeners) fn(e); }
 
-  load(plan: SessionPlan): void {
+  load(plan: SessionPlan, seed = 1): void {
     this.plan = plan;
-    this.phases = compile(plan);
+    this.phases = compile(plan, seed);
     this.status = 'idle';
     this.current = -1;
     this.finalFired = false;
