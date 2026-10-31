@@ -1,8 +1,8 @@
 // Session plan types (blueprint §Data model) and the compiler that flattens a
 // plan into timed phases. Framework-free; the scheduler reads only `Phase[]`.
 
-export type Sound = 'bell' | 'gong' | 'horn' | 'whistle' | 'clack' | 'beep' | 'none';
-export const SOUNDS: Sound[] = ['bell', 'gong', 'horn', 'whistle', 'clack', 'beep', 'none'];
+export type Sound = 'bell' | 'bell3' | 'gong' | 'horn' | 'buzzer' | 'whistle' | 'clack' | 'chime' | 'drum' | 'beep' | 'none';
+export const SOUNDS: Sound[] = ['bell', 'bell3', 'gong', 'horn', 'buzzer', 'whistle', 'clack', 'chime', 'drum', 'beep', 'none'];
 
 export type Sport =
   | 'boxing' | 'mma' | 'muaythai' | 'kickboxing' | 'bjj' | 'wrestling' | 'hiit' | 'custom';
@@ -35,7 +35,7 @@ export interface SessionPlan {
   blocks: RoundBlock[];
   cues: Cue[];
   restCues?: Cue[];
-  sounds: { start: Sound; end: Sound; restEnd: Sound; countdown: Sound };
+  sounds: { start: Sound; end: Sound; restEnd: Sound; countdown: Sound; warning?: Sound; final?: Sound };
   builtIn?: boolean;
 }
 
@@ -63,6 +63,8 @@ export const DEFAULT_SOUNDS: SessionPlan['sounds'] = {
   end: 'bell',
   restEnd: 'beep',
   countdown: 'beep',
+  warning: 'clack',
+  final: 'bell3',
 };
 
 export const DEFAULT_CUES: Cue[] = [{ at: 10, sound: 'clack' }];
@@ -208,7 +210,7 @@ export function compile(plan: SessionPlan): Phase[] {
 
 /** The cue to play when the whole session ends (after the last phase). */
 export function finalCue(plan: SessionPlan): PhaseCue {
-  return { offset: 0, sound: plan.sounds.end, kind: 'final' };
+  return { offset: 0, sound: plan.sounds.final ?? plan.sounds.end, kind: 'final' };
 }
 
 export function formatClock(seconds: number, tenths = false): string {

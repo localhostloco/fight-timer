@@ -27,8 +27,14 @@ test('coach builds a short session, runs it and sees the summary', async ({ page
   await expect(stepper('Get-ready').locator('input')).toHaveValue('0');
   await expect(page.locator('.total strong')).toHaveText('0 min');
 
+  await page.getByLabel('Round start', { exact: true }).selectOption('gong');
+  await page.getByLabel('End of session', { exact: true }).selectOption('horn');
+
   await page.getByRole('button', { name: 'Save as preset' }).click();
   await expect(page.getByRole('button', { name: 'Preset saved' })).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel('Round start', { exact: true })).toHaveValue('gong');
+  await expect(page.getByLabel('End of session', { exact: true })).toHaveValue('horn');
 
   await page.getByRole('button', { name: 'Start' }).click();
   const run = page.locator('main.run');
@@ -71,9 +77,10 @@ test('stop is never one tap away while running', async ({ page }) => {
   const stop = page.getByRole('button', { name: 'Hold to stop' });
   await stop.click(); // a plain tap must not stop
   await expect(page.getByRole('dialog')).toBeHidden();
-  await stop.dispatchEvent('pointerdown');
+  await stop.hover();
+  await page.mouse.down();
   await page.waitForTimeout(1200);
-  await stop.dispatchEvent('pointerup');
+  await page.mouse.up();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByRole('button', { name: 'Keep going' }).click();
   await expect(page.locator('main.run')).toBeVisible();

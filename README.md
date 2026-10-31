@@ -15,6 +15,7 @@ npm test           # Vitest: scheduler, plan compiler, locales, presets
 npm run build      # dist/ with service worker and manifest, base /fight-timer/
 npm run test:e2e   # Playwright against a GitHub-Pages-like static server (scripts/serve-pages.mjs)
 npm run check      # typecheck + test + build
+npm run sounds     # render every sound to test-results/sounds/*.wav
 ```
 
 ## Deploy
