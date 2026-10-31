@@ -12,6 +12,7 @@
     "test:e2e": "playwright test",
     "icons": "node scripts/make-icons.mjs",
     "sounds": "node scripts/render-sounds.mjs",
+    "audit": "node scripts/audit.mjs",
     "check": "npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
@@ -23,6 +24,7 @@
     "@playwright/test": "^1.63.0",
     "@preact/preset-vite": "^2.10.6",
     "@types/node": "^26.6.6",
+    "lighthouse": "^13.6.0",
     "typescript": "^5.9.3",
     "vite": "^8.3.5",
     "vite-plugin-pwa": "^2.0.0",

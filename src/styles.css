@@ -4,6 +4,24 @@
   --ink-on-color: #06110a;
   color-scheme: dark;
 }
+[data-theme="light"] {
+  --bg: #f4f6f8; --fg: #0b0d10; --muted: #4b5563; --panel: #ffffff; --line: #d5dae1; --accent: #1f9d55; --paused: #6b7280;
+  --prep: #e0901a; --work: #22b35f; --rest: #d9402f; color-scheme: light;
+}
+[data-theme="high-contrast"] {
+  --bg: #000; --fg: #fff; --muted: #d0d0d0; --panel: #000; --line: #fff; --accent: #fff; --paused: #222;
+  --prep: #000; --work: #000; --rest: #000; --ink-on-color: #fff; color-scheme: dark;
+}
+[data-theme="high-contrast"] .btn { border-width: 2px; }
+[data-theme="high-contrast"] .btn-primary { background: #fff; color: #000; }
+/* High contrast: white digits on black, phase shown as a thick coloured frame and the glyph, never as a fill. */
+[data-theme="high-contrast"] .run.phase-prep, [data-theme="high-contrast"] .run.phase-warmup, [data-theme="high-contrast"] .run.phase-cooldown { box-shadow: inset 0 0 0 14px #f5a623; }
+[data-theme="high-contrast"] .run.phase-work { box-shadow: inset 0 0 0 14px #2ecc71; }
+[data-theme="high-contrast"] .run.phase-rest { box-shadow: inset 0 0 0 14px #e74c3c; color: #fff; }
+[data-theme="high-contrast"] .run.paused { box-shadow: inset 0 0 0 14px #888; }
+[data-theme="high-contrast"] .group { border: 6px solid #fff; }
+[data-theme="high-contrast"] .group.phase-work { border-color: #2ecc71; } [data-theme="high-contrast"] .group.phase-rest { border-color: #e74c3c; }
+[data-theme="high-contrast"] .btn-ctl { background: #000; border: 2px solid #fff; }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
 button, input { font: inherit; }
@@ -61,6 +79,7 @@ h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; colo
 .run.phase-rest { background: var(--rest); color: #fff; }
 .run.paused { background: var(--paused); color: #fff; box-shadow: inset 0 0 0 10px var(--phase-ring, transparent); }
 .run.paused.phase-work { --phase-ring: var(--work); } .run.paused.phase-rest { --phase-ring: var(--rest); } .run.paused.phase-prep { --phase-ring: var(--prep); }
+.glyph { display: inline-block; min-width: 1.2em; }
 .run-top, .run-bottom { width: 100%; display: flex; justify-content: space-between; align-items: baseline; font-size: clamp(1.1rem, 4vmin, 2.5rem); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
 .run-bottom { font-size: clamp(0.95rem, 3vmin, 1.8rem); font-weight: 500; text-transform: none; letter-spacing: 0; }
 .clock { font-family: "Roboto Condensed", "Arial Narrow", "Helvetica Neue", system-ui, sans-serif; font-weight: 800; font-variant-numeric: tabular-nums; font-size: min(34vw, 62vmin); line-height: 1; letter-spacing: -0.03em; max-width: 100%; }
@@ -144,3 +163,16 @@ h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color
 .groups:has(.group:nth-child(3)) .clock.group-clock { font-size: min(10vw, 22vmin); }
 @media (orientation: portrait) { .groups { flex-direction: column; } .clock.group-clock, .groups:has(.group:nth-child(3)) .clock.group-clock { font-size: min(30vw, 18vh); } }
 .run.paused .group { filter: saturate(0.3); }
+
+/* Print: the session sheet only. */
+.sheet { display: none; }
+@media print {
+  html, body { background: #fff; color: #000; }
+  .screen > *:not(.sheet) { display: none !important; }
+  .screen { padding: 0; max-width: none; }
+  .sheet { display: block; }
+  .sheet h1 { font-size: 20pt; margin: 0 0 6pt; }
+  .sheet table { width: 100%; border-collapse: collapse; font-size: 11pt; }
+  .sheet th, .sheet td { border-bottom: 1px solid #999; padding: 4pt 6pt; text-align: left; }
+  .toast, .bottombar { display: none !important; }
+}

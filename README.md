@@ -2,7 +2,7 @@
 
 Free, offline, multilanguage round timer for fight coaches — boxing, MMA, Muay Thai, BJJ, HIIT. A static PWA hosted on GitHub Pages.
 
-Status: **v2** — combo callouts, random reaction cues with hidden clock, staggered multi-group timers, voice control (Chrome/Edge), custom sound upload, community locales via one JSON file (see `CONTRIBUTING.md`), on top of v1 and the MVP. v1 added (simple mode, bells and 10-second clapper on the Web Audio clock, wake lock, offline PWA, pt-BR / en / es, built-in and saved presets) plus advanced mode with variable round blocks, labels and notes, warm-up and cool-down, share links with QR codes, TV mode and full screen, spoken countdown and notes, preset import/export and a local session history. See [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md) for research, features, UI, architecture, data model and the roadmap with its acceptance criteria. `CLAUDE.md` holds the working rules for coding sessions.
+Status: **v3** — light and high-contrast themes, shape markers per phase, fight night mode, printable session sheet and a Lighthouse audit enforced in CI, on top of v2: combo callouts, random reaction cues with hidden clock, staggered multi-group timers, voice control (Chrome/Edge), custom sound upload, community locales via one JSON file (see `CONTRIBUTING.md`), on top of v1 and the MVP. v1 added (simple mode, bells and 10-second clapper on the Web Audio clock, wake lock, offline PWA, pt-BR / en / es, built-in and saved presets) plus advanced mode with variable round blocks, labels and notes, warm-up and cool-down, share links with QR codes, TV mode and full screen, spoken countdown and notes, preset import/export and a local session history. See [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md) for research, features, UI, architecture, data model and the roadmap with its acceptance criteria. `CLAUDE.md` holds the working rules for coding sessions.
 
 Live: https://localhostloco.github.io/fight-timer/
 
@@ -16,6 +16,7 @@ npm run build      # dist/ with service worker and manifest, base /fight-timer/
 npm run test:e2e   # Playwright against a GitHub-Pages-like static server (scripts/serve-pages.mjs)
 npm run check      # typecheck + test + build
 npm run sounds     # render every sound to test-results/sounds/*.wav
+npm run audit      # Lighthouse against the Pages-like server; fails below 90 (CHROME_PATH to pick a Chrome)
 ```
 
 Recorded sounds: drop `bell.mp3`, `gong.mp3`, … (or `.ogg`/`.wav`) into `public/sounds/` and they replace the synthesized versions; anything missing keeps the synth.

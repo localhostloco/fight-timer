@@ -161,7 +161,7 @@ export function Editor({ id, shared }: { id?: string; shared?: SessionPlan }) {
         <h1>{shared ? t('share.title') : t('editor.title')}</h1>
       </header>
       <SoundGate />
-      <div class="total-bar" aria-label={t('editor.total')}>
+      <div class="total-bar" role="img" aria-label={t('editor.total')}>
         <span class="seg prep" style={{ flex: tot.other }} />
         <span class="seg work" style={{ flex: tot.work }} />
         <span class="seg rest" style={{ flex: tot.rest }} />
@@ -237,7 +237,26 @@ export function Editor({ id, shared }: { id?: string; shared?: SessionPlan }) {
         </label>
       ))}
 
+      <section class="sheet" aria-hidden="true">
+        <h1>{d.name || t('editor.title')}</h1>
+        <p>{t('editor.total')}: {formatShort(tot.total)} · {t('editor.rounds')}: {tot.rounds} · {t('end.work')}: {formatShort(tot.work)} · {t('end.rest')}: {formatShort(tot.rest)}</p>
+        <table>
+          <thead><tr><th>#</th><th>{t('sheet.phase')}</th><th>{t('sheet.duration')}</th><th>{t('sheet.note')}</th></tr></thead>
+          <tbody>
+            {compile(plan).map((ph, i) => (
+              <tr key={i}>
+                <td>{ph.kind === 'work' ? ph.index : ''}</td>
+                <td>{ph.kind === 'work' ? t('phase.work') : ph.kind === 'rest' ? t('phase.rest') : ph.kind === 'prep' ? t('phase.prep') : ph.kind === 'warmup' ? t('phase.warmup') : t('phase.cooldown')}{ph.label ? ` · ${ph.label}` : ''}</td>
+                <td>{formatShort(ph.duration)}</td>
+                <td>{ph.note ?? ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
       <section class="share">
+        <button class="btn" onClick={() => window.print()}>{t('editor.print')}</button>
         <button class="btn" onClick={doShare}>{share?.copied ? t('editor.share.copied') : t('editor.share')}</button>
         {share && (
           <div class="share-box">

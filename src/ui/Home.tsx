@@ -29,7 +29,7 @@ function start(p: SessionPlan) {
 function Card({ p }: { p: SessionPlan }) {
   return (
     <li class={`card sport-${p.sport ?? 'custom'}`}>
-      <button class="card-main" onClick={() => start(p)} aria-label={`${t('editor.start')}: ${planName(p)}`}>
+      <button class="card-main" onClick={() => start(p)} title={t('editor.start')}>
         <SportIcon sport={p.sport} size={36} />
         <span class="card-text">
           <span class="card-name">{planName(p)}</span>

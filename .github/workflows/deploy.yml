@@ -33,6 +33,8 @@ jobs:
         run: npm run test:e2e
         env:
           CI: 'true'
+      - name: Lighthouse (accessibility, best practices, performance ≥ 90)
+        run: npm run audit
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

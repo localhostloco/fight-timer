@@ -199,5 +199,15 @@
   "settings.customSounds.reset": "Restaurar",
   "settings.customSounds.bad": "No se pudo decodificar ese archivo como audio.",
   "settings.customSounds.big": "Ese archivo pesa más de 1 MB.",
-  "run.hidden": "?"
+  "run.hidden": "?",
+  "settings.theme": "Tema",
+  "settings.theme.dark": "Oscuro",
+  "settings.theme.light": "Claro",
+  "settings.theme.high-contrast": "Alto contraste",
+  "settings.fightNight": "Modo noche de combate",
+  "settings.fightNight.hint": "Las sesiones empiezan bloqueadas y en modo TV: solo el reloj y el asalto, nada que tocar sin querer. Usa el preset Boxeo amateur para la regla de las tablillas a 10 segundos.",
+  "editor.print": "Imprimir hoja de sesión",
+  "sheet.phase": "Fase",
+  "sheet.duration": "Duración",
+  "sheet.note": "Nota"
 }

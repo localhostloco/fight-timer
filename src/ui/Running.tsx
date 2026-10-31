@@ -10,6 +10,8 @@ import { updateSettings } from '../store/settings';
 
 const PHASE_KEY = { prep: 'phase.prep', warmup: 'phase.warmup', work: 'phase.work', rest: 'phase.rest', cooldown: 'phase.cooldown' } as const;
 const phaseKey = (k: PhaseKind) => PHASE_KEY[k];
+/** Shape per phase so no state depends on colour alone (colour-blind safe). */
+const PHASE_GLYPH: Record<PhaseKind, string> = { prep: '▲', warmup: '▲', work: '●', rest: '■', cooldown: '▲' };
 
 /** Press-and-hold button: fires `onHold` after `ms` of continuous pressure. */
 function Hold({ ms, onHold, class: cls, children, label }: { ms: number; onHold: () => void; class?: string; children: ComponentChildren; label: string }) {
@@ -47,10 +49,11 @@ function GroupPanel({ g, n }: { g: Snapshot; n: number }) {
   const done = g.status === 'finished';
   const kind = done ? 'finished' : ph?.kind ?? 'prep';
   const label = done ? t('phase.finished') : g.status === 'paused' ? t('phase.paused') : ph?.kind === 'work' ? t('run.round', { n: ph.index, total: ph.total }) : ph ? t(phaseKey(ph.kind)) : '';
+  const glyph = done ? '✓' : g.status === 'paused' ? '❚❚' : ph ? PHASE_GLYPH[ph.kind] : '';
   return (
     <div class={`group phase-${kind}`}>
       <div class="group-name">{t('run.group', { n })}</div>
-      <div class="group-label">{label}</div>
+      <div class="group-label"><span class="glyph" aria-hidden="true">{glyph}</span> {label}</div>
       <div class="clock group-clock">{done ? '00:00' : ph?.hideClock ? t('run.hidden') : formatClock(g.remainingMs / 1000, settings.value.showTenths)}</div>
     </div>
   );
@@ -59,7 +62,7 @@ function GroupPanel({ g, n }: { g: Snapshot; n: number }) {
 export function Running() {
   const s = snap.value;
   const plan = activePlan.value;
-  const [locked, setLocked] = useState(false);
+  const [locked, setLocked] = useState(() => settings.value.fightNight);
   const [confirmStop, setConfirmStop] = useState(false);
   const tv = settings.value.tvMode;
   const [idle, setIdle] = useState(false);
@@ -125,7 +128,7 @@ export function Running() {
     <main class={`screen run phase-${phase.kind} ${paused ? 'paused' : ''} ${lastTen ? 'last-ten' : ''} ${tv ? 'tv' : ''} ${tv && idle ? 'idle' : ''}`} onClick={tap}
       aria-live="off">
       <div class="run-top">
-        <span class="run-label">{paused ? t('phase.paused') : label}</span>
+        <span class="run-label"><span class="glyph" aria-hidden="true">{paused ? '❚❚' : PHASE_GLYPH[phase.kind]}</span> {paused ? t('phase.paused') : label}</span>
         {phase.label && <span class="run-sub">{phase.label}</span>}
       </div>
       {phase.note && <div class="run-note">{phase.note}</div>}
