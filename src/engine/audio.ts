@@ -35,9 +35,33 @@ export class AudioEngine {
       this.gain.gain.value = this.volume;
       this.gain.connect(this.ctx.destination);
       for (const s of SOUNDS) this.buffers.set(s, synth(this.ctx, s));
+      void this.loadSamples();
     }
     if (this.ctx.state !== 'running') { try { await this.ctx.resume(); } catch { /* blocked until a gesture */ } }
     return this.ready;
+  }
+
+  /**
+   * Recorded samples override the synthesized sounds when present under
+   * public/sounds/<id>.(mp3|ogg|wav). Missing files are the normal case and
+   * fall back silently; the service worker precaches the folder, so the
+   * fetch is local after the first visit.
+   */
+  private async loadSamples(): Promise<void> {
+    const ctx = this.ctx;
+    if (!ctx || typeof fetch === 'undefined') return;
+    const base = import.meta.env.BASE_URL;
+    await Promise.all(SOUNDS.filter((s) => s !== 'none').map(async (s) => {
+      for (const ext of ['mp3', 'ogg', 'wav']) {
+        try {
+          const res = await fetch(`${base}sounds/${s}.${ext}`, { cache: 'force-cache' });
+          if (!res.ok || !(res.headers.get('content-type') ?? '').startsWith('audio/')) continue;
+          const buf = await ctx.decodeAudioData(await res.arrayBuffer());
+          this.buffers.set(s, buf);
+          return;
+        } catch { /* try next extension, then keep the synth */ }
+      }
+    }));
   }
 
   setVolume(v: number): void {

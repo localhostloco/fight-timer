@@ -4,6 +4,7 @@ import { Home } from './Home';
 import { Editor } from './Editor';
 import { Running } from './Running';
 import { Settings } from './Settings';
+import { Share } from './Share';
 import { UpdateToast } from './UpdateToast';
 
 export function App() {
@@ -13,6 +14,7 @@ export function App() {
     <>
       {r.name === 'home' && <Home />}
       {r.name === 'edit' && <Editor id={r.id} />}
+      {r.name === 'share' && <Share key={r.payload} payload={r.payload} />}
       {r.name === 'run' && <Running />}
       {r.name === 'settings' && <Settings />}
       <UpdateToast />

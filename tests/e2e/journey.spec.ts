@@ -56,7 +56,88 @@ test('coach builds a short session, runs it and sees the summary', async ({ page
   await expect(page.getByRole('heading', { name: 'Session complete' })).toBeVisible({ timeout: 8000 });
   await expect(page.locator('.stats')).toContainText('2');
   await page.getByRole('button', { name: 'Home' }).click();
-  await expect(page.getByText('Smoke')).toBeVisible();
+  await expect(page.locator('.card', { hasText: 'Smoke' })).toBeVisible();
+  await expect(page.locator('.history li', { hasText: 'Smoke' })).toContainText('2 rounds');
+});
+
+test('coach builds a three-block class, shares it by link, and the link opens it unchanged on another device', async ({ page, browser }) => {
+  await page.goto('./#/edit');
+  await page.getByPlaceholder('Sparring Tuesday').fill('Pad class');
+  await page.getByRole('button', { name: 'Advanced' }).click();
+  await page.getByRole('button', { name: 'Add block' }).click();
+  await page.getByRole('button', { name: 'Add block' }).click();
+  const block = (n: number) => page.locator('.block', { hasText: `Block ${n}` });
+  await block(1).getByPlaceholder('Technique').fill('Technique');
+  await block(2).getByPlaceholder('Technique').fill('Sparring');
+  await block(2).getByPlaceholder('Body shots only').fill('Southpaw');
+  await block(2).locator('.stepper', { hasText: 'Round time' }).locator('input').fill('2:00');
+  await block(2).locator('.stepper', { hasText: 'Round time' }).locator('input').press('Tab');
+  await block(3).getByPlaceholder('Technique').fill('Burnout');
+  await block(3).locator('.stepper', { hasText: 'Rounds' }).getByRole('button', { name: 'Decrease' }).click();
+  await block(3).locator('.stepper', { hasText: 'Round time' }).locator('input').fill('0:30');
+  await block(3).locator('.stepper', { hasText: 'Round time' }).locator('input').press('Tab');
+  await block(3).locator('.stepper', { hasText: 'Rest time' }).locator('input').fill('0:15');
+  await block(3).locator('.stepper', { hasText: 'Rest time' }).locator('input').press('Tab');
+  await page.locator('.stepper', { hasText: 'Warm-up' }).locator('input').fill('1:00');
+  await page.locator('.stepper', { hasText: 'Warm-up' }).locator('input').press('Tab');
+  // 60 + 10 + 3×(180+60) + 3×(120+60) + 2×30 + 15 = 1405 s => 23 min
+  await expect(page.locator('.total')).toContainText('(23:25)');
+
+  await page.getByRole('button', { name: 'Share link' }).click();
+  await expect(page.locator('.qr svg')).toBeVisible();
+  const url = await page.locator('.share-url').inputValue();
+  expect(url).toMatch(/#\/s\/[A-Za-z0-9_-]+$/);
+
+  // A second, fresh browser context stands in for the gym tablet.
+  const other = await browser.newContext({ locale: 'en-US' });
+  const tablet = await other.newPage();
+  await tablet.goto(url);
+  await expect(tablet.getByRole('heading', { name: 'Shared session' })).toBeVisible();
+  await expect(tablet.getByPlaceholder('Sparring Tuesday')).toHaveValue('Pad class');
+  await expect(tablet.locator('.total')).toContainText('(23:25)');
+  await expect(tablet.locator('.block', { hasText: 'Block 2' }).getByPlaceholder('Body shots only')).toHaveValue('Southpaw');
+  await tablet.getByRole('button', { name: 'Start' }).click();
+  await expect(tablet.locator('main.run')).toHaveClass(/phase-warmup/);
+  await tablet.getByRole('button', { name: 'Skip' }).click(); // prep
+  await tablet.getByRole('button', { name: 'Skip' }).click(); // round 1
+  await expect(tablet.locator('.run-label')).toHaveText('Round 1 of 8');
+  await expect(tablet.locator('.run-sub')).toHaveText('Technique');
+  for (let i = 0; i < 6; i++) await tablet.getByRole('button', { name: 'Skip' }).click();
+  await expect(tablet.locator('.run-label')).toHaveText('Round 4 of 8');
+  await expect(tablet.locator('.run-note')).toHaveText('Southpaw');
+  await other.close();
+});
+
+test('TV mode hides the controls after 3 s and any input brings them back', async ({ page }) => {
+  await page.goto('./');
+  await page.locator('.card', { hasText: 'MMA' }).first().locator('.card-main').click();
+  await page.getByRole('button', { name: 'TV mode' }).click();
+  await expect(page.locator('main.run')).toHaveClass(/\btv\b/);
+  await expect(page.locator('main.run')).toHaveClass(/\bidle\b/, { timeout: 5000 });
+  await expect(page.locator('.controls')).toHaveCSS('opacity', '0');
+  await expect(page.locator('.clock')).toBeVisible();
+  await page.mouse.move(200, 200);
+  await expect(page.locator('main.run')).not.toHaveClass(/\bidle\b/);
+  await expect(page.locator('.controls')).toHaveCSS('opacity', '1');
+});
+
+test('presets export to one JSON file and import on another browser', async ({ page, browser }) => {
+  await page.goto('./#/edit');
+  await page.getByPlaceholder('Sparring Tuesday').fill('Exported one');
+  await page.getByRole('button', { name: 'Save as preset' }).click();
+  await page.goto('./#/settings');
+  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Export presets' }).click()]);
+  const path = await download.path();
+  expect(path).toBeTruthy();
+
+  const other = await browser.newContext({ locale: 'en-US' });
+  const p2 = await other.newPage();
+  await p2.goto('./#/settings');
+  await p2.getByLabel('Import presets').setInputFiles(path!);
+  await expect(p2.getByRole('status')).toHaveText('1 presets imported');
+  await p2.goto('./');
+  await expect(p2.locator('.card', { hasText: 'Exported one' })).toBeVisible();
+  await other.close();
 });
 
 test('language switch needs no reload', async ({ page }) => {

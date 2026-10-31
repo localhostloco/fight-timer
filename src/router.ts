@@ -4,6 +4,7 @@ import { signal } from '@preact/signals';
 export type Route =
   | { name: 'home' }
   | { name: 'edit'; id?: string }
+  | { name: 'share'; payload: string }
   | { name: 'run' }
   | { name: 'settings' };
 
@@ -11,6 +12,7 @@ export function parseRoute(hash: string): Route {
   const path = hash.replace(/^#\/?/, '').split('/');
   switch (path[0]) {
     case 'edit': return { name: 'edit', id: path[1] ? decodeURIComponent(path[1]) : undefined };
+    case 's': return path[1] ? { name: 'share', payload: path[1] } : { name: 'home' };
     case 'run': return { name: 'run' };
     case 'settings': return { name: 'settings' };
     default: return { name: 'home' };

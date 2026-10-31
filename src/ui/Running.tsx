@@ -5,6 +5,7 @@ import { t, fmtMinutes } from '../i18n';
 import { formatClock, formatShort, totals, type PhaseKind } from '../engine/plan';
 import { settings } from '../store/settings';
 import { activePlan, pauseSession, restartPhase, skipPhase, snap, soundReady, startSession, stopSession, toggleSession, wake, wasLate } from '../store/session';
+import { updateSettings } from '../store/settings';
 
 const PHASE_KEY = { prep: 'phase.prep', warmup: 'phase.warmup', work: 'phase.work', rest: 'phase.rest', cooldown: 'phase.cooldown' } as const;
 const phaseKey = (k: PhaseKind) => PHASE_KEY[k];
@@ -32,11 +33,31 @@ function Hold({ ms, onHold, class: cls, children, label }: { ms: number; onHold:
   );
 }
 
+async function toggleFullscreen(): Promise<void> {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await document.documentElement.requestFullscreen?.();
+  } catch { /* not allowed here */ }
+}
+
 export function Running() {
   const s = snap.value;
   const plan = activePlan.value;
   const [locked, setLocked] = useState(false);
   const [confirmStop, setConfirmStop] = useState(false);
+  const tv = settings.value.tvMode;
+  const [idle, setIdle] = useState(false);
+  const idleTimer = useRef(0);
+
+  // TV mode: controls hide after 3 s without input and come back on any input.
+  useEffect(() => {
+    if (!tv) { setIdle(false); return; }
+    const arm = () => { setIdle(false); clearTimeout(idleTimer.current); idleTimer.current = window.setTimeout(() => setIdle(true), 3000); };
+    arm();
+    const evs = ['pointermove', 'pointerdown', 'keydown', 'touchstart'] as const;
+    for (const e of evs) window.addEventListener(e, arm, { passive: true });
+    return () => { clearTimeout(idleTimer.current); for (const e of evs) window.removeEventListener(e, arm); };
+  }, [tv]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -44,6 +65,8 @@ export function Running() {
       if (e.key === ' ') { e.preventDefault(); toggleSession(); }
       else if (e.key === 'ArrowRight') skipPhase();
       else if (e.key === 'r') restartPhase();
+      else if (e.key === 'f') void toggleFullscreen();
+      else if (e.key === 't') updateSettings({ tvMode: !settings.value.tvMode });
       else if (e.key === 'Escape') setConfirmStop(true);
     };
     window.addEventListener('keydown', onKey);
@@ -83,12 +106,13 @@ export function Running() {
   const tap = () => { if (!locked && !confirmStop) toggleSession(); };
 
   return (
-    <main class={`screen run phase-${phase.kind} ${paused ? 'paused' : ''} ${lastTen ? 'last-ten' : ''}`} onClick={tap}
+    <main class={`screen run phase-${phase.kind} ${paused ? 'paused' : ''} ${lastTen ? 'last-ten' : ''} ${tv ? 'tv' : ''} ${tv && idle ? 'idle' : ''}`} onClick={tap}
       aria-live="off">
       <div class="run-top">
         <span class="run-label">{paused ? t('phase.paused') : label}</span>
         {phase.label && <span class="run-sub">{phase.label}</span>}
       </div>
+      {phase.note && <div class="run-note">{phase.note}</div>}
       <div class="clock" aria-live="polite" aria-atomic="true">{formatClock(remaining, settings.value.showTenths)}</div>
       <div class="run-bottom">
         <span>{next}</span>
@@ -111,6 +135,8 @@ export function Running() {
             <button class="btn btn-ctl" onClick={restartPhase}>↺ {t('run.restart')}</button>
             <button class="btn btn-ctl" onClick={skipPhase}>⏭ {t('run.skip')}</button>
             <button class="btn btn-ctl" onClick={() => setLocked(true)}>🔓 {t('run.lock')}</button>
+            <button class="btn btn-ctl" aria-pressed={tv} onClick={() => updateSettings({ tvMode: !tv })}>📺 {t('run.tv')}</button>
+            {typeof document !== 'undefined' && document.fullscreenEnabled && <button class="btn btn-ctl" onClick={() => void toggleFullscreen()}>⛶ {t('run.fullscreen')}</button>}
             <Hold ms={1000} onHold={() => setConfirmStop(true)} class="btn btn-ctl btn-danger" label={t('run.stop.hold')}>■ {t('run.stop.hold')}</Hold>
           </>
         )}

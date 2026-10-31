@@ -5,6 +5,8 @@ import { settings } from '../store/settings';
 import { formatShort, totalDuration, type SessionPlan } from '../engine/plan';
 import { startSession } from '../store/session';
 import { SoundGate } from './SoundGate';
+import { history } from '../store/history';
+import { locale } from '../i18n';
 
 export function planName(p: SessionPlan): string {
   return p.builtIn ? t(p.name as Key) : p.name || t('editor.title');
@@ -12,7 +14,9 @@ export function planName(p: SessionPlan): string {
 
 export function planSummary(p: SessionPlan): string {
   const b = p.blocks[0]!;
-  return t('home.summary', { rounds: b.count, work: formatShort(b.work), rest: formatShort(b.rest), total: fmtMinutes(totalDuration(p)) });
+  const rounds = p.blocks.length > 1 ? p.blocks.map((x) => x.count).join('+') : String(b.count);
+  const pick = (f: (x: typeof b) => number) => (p.blocks.length > 1 ? p.blocks.map((x) => formatShort(f(x))).join('/') : formatShort(f(b)));
+  return t('home.summary', { rounds, work: pick((x) => x.work), rest: pick((x) => x.rest), total: fmtMinutes(totalDuration(p)) });
 }
 
 function start(p: SessionPlan) {
@@ -38,6 +42,26 @@ function Card({ p }: { p: SessionPlan }) {
   );
 }
 
+function History() {
+  const list = history.value.slice(0, 10);
+  if (list.length === 0) return null;
+  const fmt = new Intl.DateTimeFormat(locale.value, { dateStyle: 'short', timeStyle: 'short' });
+  return (
+    <section>
+      <h2>{t('history.title')}</h2>
+      <ul class="history">
+        {list.map((h) => (
+          <li key={h.at}>
+            <span class="muted">{fmt.format(new Date(h.at))}</span>
+            <span>{h.builtIn ? t(h.name as Key) : h.name || t('editor.title')}</span>
+            <span class="muted">{t('history.entry', { rounds: h.rounds, total: fmtMinutes(h.total) })}{h.completed ? '' : ` · ${t('history.stopped')}`}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function Home() {
   const mine = userPresets.value;
   const last = settings.value.lastPlanId ? findPreset(settings.value.lastPlanId) : undefined;
@@ -56,6 +80,7 @@ export function Home() {
         <h2>{t('home.builtin')}</h2>
         <ul class="cards">{builtIns.map((p) => <Card key={p.id} p={p} />)}</ul>
       </section>
+      <History />
       <nav class="bottombar">
         {last && <button class="btn" onClick={() => start(last)}>{t('nav.quick')}</button>}
         <button class="btn btn-primary" onClick={() => navigate('edit')}>{t('nav.new')}</button>

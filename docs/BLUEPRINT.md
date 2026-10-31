@@ -351,11 +351,11 @@ Nothing from v1 starts until the MVP gate passes on an Android phone, an iPhone 
 
 **v1 acceptance criteria**
 
-- [ ] A plan with three different round blocks round-trips through a share link and QR code on another device unchanged
-- [ ] TV mode shows only clock, phase and round counter; controls reappear on any input and auto-hide after 3 s
-- [ ] Voice countdown and round notes are spoken in the selected locale with the chosen voice
-- [ ] Presets export to one JSON file and import on another browser without loss
-- [ ] End-of-session summary shows rounds completed, work, rest and total time
+- [x] A plan with three different round blocks round-trips through a share link and QR code on another device unchanged — `src/engine/codec.test.ts` and the journey open the link in a second browser context
+- [x] TV mode shows only clock, phase and round counter; controls reappear on any input and auto-hide after 3 s — journey test, plus `f` for full screen and `t` to toggle TV mode from a keyboard
+- [ ] Voice countdown and round notes are spoken in the selected locale with the chosen voice — implemented (`src/engine/voice.ts`, Settings → Voice, off by default); headless Chromium has no speech engine, so this stays unticked until heard on a real device
+- [x] Presets export to one JSON file and import on another browser without loss — `src/store/transfer.test.ts` and the journey
+- [x] End-of-session summary shows rounds completed, work, rest and total time — plus the last 50 sessions on the home screen (`ft.history`), stopped sessions marked as such
 
 **v2 acceptance criteria**
 
@@ -392,6 +392,9 @@ The web platform can match native on everything except deep background on iOS; t
 - Sounds: **all synthesized** in `src/engine/sounds.ts` (pure generators, unit-tested) and rendered once per session into Web Audio buffers by `src/engine/audio.ts`. Ten sounds: boxing bell, triple bell, gong, air horn, buzzer, referee whistle, wood clapper, chime, drum, beep. Bells and gong use modal synthesis (measured partial ratios, detuned pairs for beating, filtered-noise strike) through a soft limiter. `npm run sounds` renders them to WAV for auditioning. The whole precache is 86 KB. Recorded CC0 samples remain an option: drop files in `public/sounds/` and decode them into the same buffer map.
 - Hosting: GitHub Pages project site under `/fight-timer/`. The base is the single `BASE_PATH` env read in `vite.config.ts`; a custom domain later means building with `BASE_PATH=/`.
 - Analytics: none.
+- Recorded samples: the audio engine looks for `public/sounds/<id>.mp3|ogg|wav` when the context unlocks and uses whatever decodes, keeping the synthesized sound as fallback. No files ship yet; the sandbox used for development cannot reach Freesound, Pixabay or Mixkit, so picking them is a manual step (CC0 or equivalent licence only, under 300 KB in total).
+- Share links: `#/s/<base64url JSON with short keys>`; `decodePlan` clamps every value and ignores unknown keys, so hostile or future links degrade to a valid plan or a clear error, never a crash.
+- QR codes: the only runtime dependency added is `uqr` (≈3 KB in the bundle) rendering an SVG client-side.
 
 **Still open**
 
