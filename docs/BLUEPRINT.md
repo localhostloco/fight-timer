@@ -333,7 +333,8 @@ flowchart LR
   V1["v1 (weeks 4–7)<br/>Advanced mode: variable blocks<br/>Share link + QR, import/export<br/>TV mode, lock, keyboard<br/>Voice countdown + round notes<br/>Session summary, local history"]
   G2{{"Gate: a coach runs a full class<br/>from a shared link, unassisted"}}
   V2["v2 (weeks 8+)<br/>Combo callouts (TTS lists)<br/>Random reaction cues<br/>Voice control (Chrome only)<br/>Staggered multi-group timers<br/>Community locales, custom sounds"]
-  MVP --> G1 --> V1 --> G2 --> V2
+  V3["v3 (polish)<br/>Light + high-contrast themes<br/>Shape markers per phase<br/>Fight night mode<br/>Print session sheet<br/>Lighthouse ≥ 90 in CI"]
+  MVP --> G1 --> V1 --> G2 --> V2 --> V3
 ```
 
 Nothing from v1 starts until the MVP gate passes on an Android phone, an iPhone and a laptop plugged into a TV.
@@ -347,7 +348,7 @@ Nothing from v1 starts until the MVP gate passes on an Android phone, an iPhone 
 - [x] Complete pt-BR, en and es string tables; switching language needs no reload and no string is hard-coded — `src/i18n/i18n.test.ts` diffs every table against `en.json`; the journey switches locales live
 - [ ] Phase colors are legible from 5 m in gym lighting; digits never jitter (tabular numerals)
 - [x] No destructive action is one tap away while running; lock toggle works with gloves — Stop needs a 1 s hold then a confirm, unlock a 2 s hold (`tests/e2e/journey.spec.ts`)
-- [ ] Lighthouse PWA and accessibility scores at or above 90
+- [x] Lighthouse PWA and accessibility scores at or above 90 — `npm run audit` (in CI) fails below 90 on accessibility, best practices and performance for the home, editor and settings routes; measured 96–100. Lighthouse 12+ dropped the PWA category, so installability is proven by the manifest and service-worker tests instead
 
 **v1 acceptance criteria**
 
@@ -356,6 +357,15 @@ Nothing from v1 starts until the MVP gate passes on an Android phone, an iPhone 
 - [ ] Voice countdown and round notes are spoken in the selected locale with the chosen voice — implemented (`src/engine/voice.ts`, Settings → Voice, off by default); headless Chromium has no speech engine, so this stays unticked until heard on a real device
 - [x] Presets export to one JSON file and import on another browser without loss — `src/store/transfer.test.ts` and the journey
 - [x] End-of-session summary shows rounds completed, work, rest and total time — plus the last 50 sessions on the home screen (`ft.history`), stopped sessions marked as such
+
+**v3 (polish and accessibility) acceptance criteria** — the items the feature table listed but the original roadmap never scheduled
+
+- [x] Light and high-contrast themes selectable in Settings, applied without reload, `theme-color` follows — journey. High contrast shows white digits on black with the phase as a thick coloured frame plus a shape, never a fill
+- [x] No running-screen state depends on colour alone: each phase carries a shape (▲ prep, ● work, ■ rest, ❚❚ paused) next to its label, in every theme and in every group panel — journey
+- [x] Fight night mode: sessions start locked and in TV mode, only clock and round, nothing to tap by accident — journey
+- [x] Print-friendly session sheet: a plan prints as a table of phases with durations and notes, nothing else on the page — journey under print media emulation
+- [x] Lighthouse accessibility, best practices and performance at or above 90 on every route, enforced in CI — see the MVP criterion above
+- [ ] Wake-lock fallback for browsers without the API (looping muted video): not built; the banner remains. Needs a real iOS device to be worth doing
 
 **v2 acceptance criteria**
 

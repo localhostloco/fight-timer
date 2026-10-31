@@ -112,6 +112,14 @@ export function Settings() {
 
       <section>
         <h2>{t('settings.display')}</h2>
+        <div class="choices" role="radiogroup" aria-label={t('settings.theme')}>
+          {(['dark', 'light', 'high-contrast'] as const).map((th) => (
+            <button key={th} type="button" role="radio" aria-checked={s.theme === th} class={`btn btn-sm ${s.theme === th ? 'btn-primary' : ''}`} onClick={() => updateSettings({ theme: th })}>{t(`settings.theme.${th}` as const)}</button>
+          ))}
+        </div>
+        <label class="row"><span>{t('settings.fightNight')}</span>
+          <input type="checkbox" checked={s.fightNight} onChange={(e) => updateSettings({ fightNight: (e.target as HTMLInputElement).checked })} /></label>
+        <p class="muted">{t('settings.fightNight.hint')}</p>
         {toggle('keepAwake')}
         {toggle('showTenths')}
         {listener.supported ? (

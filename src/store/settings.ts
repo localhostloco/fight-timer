@@ -10,7 +10,8 @@ export interface Settings {
   tvMode: boolean;
   voiceControl: boolean;
   voice: { enabled: boolean; name?: string; rate: number };
-  theme: 'dark';
+  theme: 'dark' | 'light' | 'high-contrast';
+  fightNight: boolean;
   lastPlanId?: string;
 }
 
@@ -28,6 +29,7 @@ const defaults = (): Settings => ({
   voiceControl: false,
   voice: { enabled: false, rate: 1 },
   theme: 'dark',
+  fightNight: false,
 });
 
 export function loadSettings(storage: Storage | null = safeStorage()): Settings {
@@ -55,6 +57,8 @@ if (typeof window !== 'undefined') {
   effect(() => {
     const s = settings.value;
     setLocale(s.locale);
+    document.documentElement.dataset.theme = s.theme;
+    document.querySelector('meta[name=theme-color]')?.setAttribute('content', s.theme === 'light' ? '#f4f6f8' : '#0b0d10');
     const st = safeStorage();
     if (st) { st.setItem(SETTINGS_KEY, JSON.stringify(s)); st.setItem(SCHEMA_KEY, String(SCHEMA_VERSION)); }
   });

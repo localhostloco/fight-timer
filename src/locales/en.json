@@ -199,5 +199,15 @@
   "settings.customSounds.reset": "Reset",
   "settings.customSounds.bad": "That file could not be decoded as audio.",
   "settings.customSounds.big": "That file is bigger than 1 MB.",
-  "run.hidden": "?"
+  "run.hidden": "?",
+  "settings.theme": "Theme",
+  "settings.theme.dark": "Dark",
+  "settings.theme.light": "Light",
+  "settings.theme.high-contrast": "High contrast",
+  "settings.fightNight": "Fight night mode",
+  "settings.fightNight.hint": "Sessions start locked and in TV mode: only the clock and the round, nothing to tap by accident. Use the Boxing amateur preset for the 10-second clapper rule.",
+  "editor.print": "Print session sheet",
+  "sheet.phase": "Phase",
+  "sheet.duration": "Duration",
+  "sheet.note": "Note"
 }

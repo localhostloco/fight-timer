@@ -199,5 +199,15 @@
   "settings.customSounds.reset": "Restaurar",
   "settings.customSounds.bad": "Não foi possível decodificar esse arquivo como áudio.",
   "settings.customSounds.big": "Esse arquivo tem mais de 1 MB.",
-  "run.hidden": "?"
+  "run.hidden": "?",
+  "settings.theme": "Tema",
+  "settings.theme.dark": "Escuro",
+  "settings.theme.light": "Claro",
+  "settings.theme.high-contrast": "Alto contraste",
+  "settings.fightNight": "Modo noite de luta",
+  "settings.fightNight.hint": "As sessões começam bloqueadas e em modo TV: só o relógio e o round, nada para tocar sem querer. Use o preset Boxe amador para a regra do clapper de 10 segundos.",
+  "editor.print": "Imprimir ficha da sessão",
+  "sheet.phase": "Fase",
+  "sheet.duration": "Duração",
+  "sheet.note": "Nota"
 }

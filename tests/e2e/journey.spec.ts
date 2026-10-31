@@ -40,7 +40,7 @@ test('coach builds a short session, runs it and sees the summary', async ({ page
   await page.getByRole('button', { name: 'Start' }).click();
   const run = page.locator('main.run');
   await expect(run).toHaveClass(/phase-work/);
-  await expect(page.locator('.run-label')).toHaveText('Round 1 of 2');
+  await expect(page.locator('.run-label')).toHaveText(/Round 1 of 2$/);
   await expect(page.locator('.clock')).toHaveText(/00:0[1-5]/);
 
   await page.getByRole('button', { name: 'Pause' }).click();
@@ -52,7 +52,7 @@ test('coach builds a short session, runs it and sees the summary', async ({ page
 
   await expect(run).toHaveClass(/phase-rest/, { timeout: 8000 });
   await page.getByRole('button', { name: 'Skip' }).click();
-  await expect(page.locator('.run-label')).toHaveText('Round 2 of 2');
+  await expect(page.locator('.run-label')).toHaveText(/Round 2 of 2$/);
 
   await expect(page.getByRole('heading', { name: 'Session complete' })).toBeVisible({ timeout: 8000 });
   await expect(page.locator('.stats')).toContainText('2');
@@ -103,10 +103,10 @@ test('coach builds a three-block class, shares it by link, and the link opens it
   await expect(tablet.locator('main.run')).toHaveClass(/phase-warmup/);
   await tablet.getByRole('button', { name: 'Skip' }).click(); // prep
   await tablet.getByRole('button', { name: 'Skip' }).click(); // round 1
-  await expect(tablet.locator('.run-label')).toHaveText('Round 1 of 8');
+  await expect(tablet.locator('.run-label')).toHaveText(/Round 1 of 8$/);
   await expect(tablet.locator('.run-sub')).toHaveText('Technique');
   for (let i = 0; i < 6; i++) await tablet.getByRole('button', { name: 'Skip' }).click();
-  await expect(tablet.locator('.run-label')).toHaveText('Round 4 of 8');
+  await expect(tablet.locator('.run-label')).toHaveText(/Round 4 of 8$/);
   await expect(tablet.locator('.run-note')).toHaveText('Southpaw');
   await other.close();
 });
@@ -141,6 +141,30 @@ test('presets export to one JSON file and import on another browser', async ({ p
   await p2.goto('./');
   await expect(p2.locator('.card', { hasText: 'Exported one' })).toBeVisible();
   await other.close();
+});
+
+test('themes switch live, fight night starts locked in TV mode, and the sheet prints', async ({ page }) => {
+  await page.goto('./#/settings');
+  await page.getByRole('radio', { name: 'Light' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(244, 246, 248)');
+  await page.getByRole('radio', { name: 'High contrast' }).click();
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
+  await page.getByRole('radio', { name: 'Dark' }).click();
+  await page.getByLabel('Fight night mode').check();
+  await page.goto('./');
+  await page.locator('.card', { hasText: 'Boxing amateur' }).locator('.card-main').click();
+  await expect(page.locator('main.run')).toHaveClass(/\btv\b/);
+  await expect(page.getByRole('button', { name: 'Hold to unlock' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Hold to stop' })).toBeHidden();
+  await expect(page.locator('.run-label .glyph')).toHaveText('▲'); // shape, not colour alone
+
+  await page.goto('./#/edit/builtin.mma');
+  await page.emulateMedia({ media: 'print' });
+  await expect(page.locator('.sheet')).toBeVisible();
+  await expect(page.locator('.sheet tbody tr')).toHaveCount(6); // prep + 3 work + 2 rest
+  await expect(page.locator('.stepper').first()).toBeHidden();
+  await page.emulateMedia({ media: 'screen' });
 });
 
 test('language switch needs no reload', async ({ page }) => {

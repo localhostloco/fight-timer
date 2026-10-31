@@ -153,6 +153,7 @@ export function startSession(plan: SessionPlan): void {
   for (const g of extra) g.start();
   groupSnaps.value = extra.length ? allSchedulers().map((g) => g.snapshot()) : [];
   if (settings.value.voiceControl && !listening.value) startListening();
+  if (settings.value.fightNight && !settings.value.tvMode) settings.value = { ...settings.value, tvMode: true };
   if (settings.value.keepAwake) void wake.enable();
   if (!worker) { worker = heartbeat(); if (worker) worker.onmessage = () => { if (scheduler.currentStatus === 'running') pump(); }; }
   pump();
