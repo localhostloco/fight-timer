@@ -343,10 +343,10 @@ Nothing from v1 starts until the MVP gate passes on an Android phone, an iPhone 
 - [ ] Simple-mode session (rounds, work, rest, prep) runs 60 minutes with every bell within 50 ms of its scheduled time, measured by recording the audio output next to a reference clock
 - [ ] Bells fire with the screen off or the tab in background on Android Chrome and desktop browsers; on iOS Safari the display re-syncs correctly on return and any missed bell fires immediately
 - [ ] Screen stays awake for the whole session on devices that support Wake Lock; banner shown where it is not supported
-- [ ] App installs as a PWA and runs a full session in airplane mode after one prior visit
-- [ ] Complete pt-BR, en and es string tables; switching language needs no reload and no string is hard-coded
+- [x] App installs as a PWA and runs a full session in airplane mode after one prior visit — `tests/e2e/pages.spec.ts` registers the service worker under the base scope, goes offline and reloads
+- [x] Complete pt-BR, en and es string tables; switching language needs no reload and no string is hard-coded — `src/i18n/i18n.test.ts` diffs every table against `en.json`; the journey switches locales live
 - [ ] Phase colors are legible from 5 m in gym lighting; digits never jitter (tabular numerals)
-- [ ] No destructive action is one tap away while running; lock toggle works with gloves
+- [x] No destructive action is one tap away while running; lock toggle works with gloves — Stop needs a 1 s hold then a confirm, unlock a 2 s hold (`tests/e2e/journey.spec.ts`)
 - [ ] Lighthouse PWA and accessibility scores at or above 90
 
 **v1 acceptance criteria**
@@ -385,13 +385,17 @@ The web platform can match native on everything except deep background on iOS; t
 | Wall-mounted device left in rest phase | Battery drain | Auto-stop 10 min after the session ends; wake lock released on finish |
 | Localization of audio (voice packs) is bigger than UI strings | Scope creep | MVP voice = system TTS only; recorded voice packs are out of scope |
 
-**Open questions**
+**Decisions taken in the MVP** (reversible; each is one place in the code)
 
-- Launch locales: pt-BR, en, es is the assumption; confirm and decide whether pt-BR or en is the default when the browser language is unknown.
-- UI library: Preact (smallest, React-like) versus Svelte (smallest runtime, nicer for animations) versus vanilla TypeScript (zero deps, more hand-written state). Recommendation: Preact + signals.
-- Should the app ship a few recorded bell samples (bigger bundle, authentic) or synthesize everything (tiny, less authentic)? Recommendation: 4–6 short CC0 samples under 300 KB total plus a synthesized fallback.
-- Name and domain: GitHub Pages default (`user.github.io/repo`) or a custom domain later; the base-path decision affects the share-link format.
-- Analytics: none by default; if any, a privacy-respecting, cookie-free counter only.
+- Default locale when the browser language is unknown: **en** (`DEFAULT_LOCALE` in `src/i18n/index.ts`). pt, es and en browser languages map to their locale.
+- UI library: **Preact + signals**, as recommended.
+- Sounds: **all synthesized** in `src/engine/audio.ts` (bell, gong, horn, whistle, clapper, beep as Web Audio buffers rendered once per session). The whole precache is 82 KB. Recorded CC0 samples remain an option: drop files in `public/sounds/` and decode them into the same buffer map.
+- Hosting: GitHub Pages project site under `/fight-timer/`. The base is the single `BASE_PATH` env read in `vite.config.ts`; a custom domain later means building with `BASE_PATH=/`.
+- Analytics: none.
+
+**Still open**
+
+- Name and domain, if the project outgrows `localhostloco.github.io/fight-timer`.
 
 ## Sources
 
