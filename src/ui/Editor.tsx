@@ -4,7 +4,7 @@ import { navigate } from '../router';
 import { t, fmtMinutes } from '../i18n';
 import { findPreset, savePreset } from '../store/presets';
 import { settings } from '../store/settings';
-import { DEFAULT_SOUNDS, LIMITS, SOUNDS, clamp, compile, formatShort, newId, simplePlan, totals, type RoundBlock, type SessionPlan, type Sound, type Sport } from '../engine/plan';
+import { CALLOUT_LIMITS, COMBO_SETS, DEFAULT_SOUNDS, GROUP_LIMITS, LIMITS, RANDOM_LIMITS, SOUNDS, clamp, compile, formatShort, newId, simplePlan, totals, type Groups, type RoundBlock, type SessionPlan, type Sound, type Sport } from '../engine/plan';
 import { shareUrl } from '../engine/codec';
 import { audio, enableSound, startSession } from '../store/session';
 import { planName } from './Home';
@@ -12,7 +12,7 @@ import { SoundGate } from './SoundGate';
 import { SPORTS, SportIcon } from './SportIcon';
 
 type Sounds = Required<SessionPlan['sounds']>;
-interface Draft { name: string; sport: Sport; prep: number; warn: number; warmup: number; cooldown: number; blocks: RoundBlock[]; sounds: Sounds; advanced: boolean }
+interface Draft { name: string; sport: Sport; prep: number; warn: number; warmup: number; cooldown: number; blocks: RoundBlock[]; sounds: Sounds; advanced: boolean; calloutEvery: number; calloutOrder: 'random' | 'sequence'; groups?: Groups }
 
 const SOUND_EVENTS = ['start', 'end', 'warning', 'countdown', 'final'] as const;
 const DEFAULT_DRAFT_SOUNDS = DEFAULT_SOUNDS as Sounds;
@@ -20,8 +20,8 @@ const BLOCK_LIMIT = { min: 0, max: 3600 };
 
 function toDraft(p: SessionPlan): Draft {
   const sounds: Sounds = { ...DEFAULT_DRAFT_SOUNDS, ...p.sounds, warning: p.cues[0]?.sound ?? p.sounds.warning ?? 'clack' };
-  const advanced = p.blocks.length > 1 || !!p.warmup || !!p.cooldown || p.blocks.some((b) => b.label || b.note);
-  return { name: p.builtIn ? planName(p) : p.name, sport: p.sport ?? 'custom', prep: p.prep, warn: p.cues[0]?.at ?? 10, warmup: p.warmup ?? 0, cooldown: p.cooldown ?? 0, blocks: p.blocks.map((b) => ({ ...b })), sounds, advanced };
+  const advanced = p.blocks.length > 1 || !!p.warmup || !!p.cooldown || !!p.groups || p.blocks.some((b) => b.label || b.note || b.random || b.callouts?.length);
+  return { name: p.builtIn ? planName(p) : p.name, sport: p.sport ?? 'custom', prep: p.prep, warn: p.cues[0]?.at ?? 10, warmup: p.warmup ?? 0, cooldown: p.cooldown ?? 0, blocks: p.blocks.map((b) => ({ ...b, callouts: b.callouts ? [...b.callouts] : undefined, random: b.random ? { ...b.random } : undefined })), sounds, advanced, calloutEvery: p.calloutEvery ?? 20, calloutOrder: p.calloutOrder ?? 'random', groups: p.groups ? { ...p.groups } : undefined };
 }
 
 function blankDraft(): Draft {
@@ -32,7 +32,14 @@ export function toPlan(d: Draft, base?: SessionPlan): SessionPlan {
   const first = d.blocks[0]!;
   const plan = simplePlan({ rounds: first.count, work: first.work, rest: first.rest, prep: d.prep, name: d.name, sport: d.sport });
   if (base && !base.builtIn) plan.id = base.id;
-  plan.blocks = d.blocks.map((b) => ({ ...b, count: clamp(b.count, LIMITS.rounds), work: clamp(b.work, LIMITS.work), rest: clamp(b.rest, LIMITS.rest), label: b.label?.trim() || undefined, note: b.note?.trim() || undefined }));
+  plan.blocks = d.blocks.map((b) => ({
+    ...b, count: clamp(b.count, LIMITS.rounds), work: clamp(b.work, LIMITS.work), rest: clamp(b.rest, LIMITS.rest),
+    label: b.label?.trim() || undefined, note: b.note?.trim() || undefined,
+    callouts: b.callouts?.map((c) => c.trim()).filter(Boolean).length ? b.callouts.map((c) => c.trim()).filter(Boolean) : undefined,
+    random: b.random ? { ...b.random, minGap: clamp(Math.min(b.random.minGap, b.random.maxGap), RANDOM_LIMITS.gap), maxGap: clamp(Math.max(b.random.minGap, b.random.maxGap), RANDOM_LIMITS.gap) } : undefined,
+  }));
+  if (plan.blocks.some((b) => b.callouts)) { plan.calloutEvery = clamp(d.calloutEvery, CALLOUT_LIMITS.every); plan.calloutOrder = d.calloutOrder; }
+  if (d.groups) plan.groups = { count: d.groups.count, offset: clamp(d.groups.offset, GROUP_LIMITS.offset) };
   plan.sounds = { ...d.sounds };
   plan.cues = d.warn > 0 ? [{ at: d.warn, sound: d.sounds.warning }] : [];
   if (d.warmup > 0) plan.warmup = d.warmup;
@@ -75,6 +82,36 @@ function BlockEditor({ b, i, n, onChange, onAction }: { b: RoundBlock; i: number
       <Stepper id={id('rest')} label={t('editor.rest')} value={b.rest} display={formatShort(b.rest)} step={15} limits={LIMITS.rest} onChange={(v) => onChange({ ...b, rest: v })} parse={parseDuration} />
       <label class="field"><span>{t('editor.block.note')}</span>
         <input type="text" value={b.note ?? ''} placeholder={t('editor.block.note.placeholder')} onInput={(e) => onChange({ ...b, note: (e.target as HTMLInputElement).value })} /></label>
+
+      <details class="sub">
+        <summary>{t('editor.callouts')}{b.callouts?.length ? ` (${b.callouts.length})` : ''}</summary>
+        <label class="field"><span>{t('editor.callouts.list')}</span>
+          <textarea rows={4} value={(b.callouts ?? []).join('\n')} placeholder={t('editor.callouts.placeholder')} aria-label={t('editor.callouts.list')}
+            onInput={(e) => onChange({ ...b, callouts: (e.target as HTMLTextAreaElement).value.split('\n') })} /></label>
+        <div class="choices">
+          <span class="muted">{t('editor.callouts.fill')}:</span>
+          {(['basic', 'intermediate', 'advanced'] as const).map((k) => <button key={k} class="btn btn-sm" onClick={() => onChange({ ...b, callouts: [...COMBO_SETS[k]] })}>{t(`editor.callouts.${k}` as const)}</button>)}
+          <button class="btn btn-sm" onClick={() => onChange({ ...b, callouts: undefined })}>{t('editor.callouts.clear')}</button>
+        </div>
+      </details>
+
+      <details class="sub" open={!!b.random}>
+        <summary>{t('editor.random')}</summary>
+        <label class="row"><span>{t('editor.random.enabled')}</span>
+          <input type="checkbox" checked={!!b.random} onChange={(e) => onChange({ ...b, random: (e.target as HTMLInputElement).checked ? { minGap: 5, maxGap: 12, sound: 'whistle', hideClock: false } : undefined })} /></label>
+        {b.random && (
+          <>
+            <Stepper id={id('rmin')} label={t('editor.random.min')} value={b.random.minGap} display={String(b.random.minGap)} step={1} limits={RANDOM_LIMITS.gap} onChange={(v) => onChange({ ...b, random: { ...b.random!, minGap: v } })} />
+            <Stepper id={id('rmax')} label={t('editor.random.max')} value={b.random.maxGap} display={String(b.random.maxGap)} step={1} limits={RANDOM_LIMITS.gap} onChange={(v) => onChange({ ...b, random: { ...b.random!, maxGap: v } })} />
+            <label class="row"><span>{t('editor.random.sound')}</span>
+              <select class="select" value={b.random.sound} aria-label={t('editor.random.sound')} onChange={(e) => onChange({ ...b, random: { ...b.random!, sound: (e.target as HTMLSelectElement).value as Sound } })}>
+                {SOUNDS.filter((x) => x !== 'none').map((x) => <option key={x} value={x}>{t(`sound.name.${x}` as const)}</option>)}
+              </select></label>
+            <label class="row"><span>{t('editor.random.hide')}</span>
+              <input type="checkbox" checked={!!b.random.hideClock} onChange={(e) => onChange({ ...b, random: { ...b.random!, hideClock: (e.target as HTMLInputElement).checked } })} /></label>
+          </>
+        )}
+      </details>
       <div class="block-actions">
         <button class="btn btn-sm" disabled={i === 0} onClick={() => onAction('up')} aria-label={t('editor.block.up')}>↑</button>
         <button class="btn btn-sm" disabled={i === n - 1} onClick={() => onAction('down')} aria-label={t('editor.block.down')}>↓</button>
@@ -162,6 +199,24 @@ export function Editor({ id, shared }: { id?: string; shared?: SessionPlan }) {
           {d.blocks.map((b, i) => <BlockEditor key={b.id} b={b} i={i} n={d.blocks.length} onChange={(nb) => setBlock(i, nb)} onAction={(a) => blockAction(i, a)} />)}
           <button class="btn" onClick={() => patch({ blocks: [...d.blocks, { id: newId(), count: 3, work: 180, rest: 60 }] })}>+ {t('editor.block.add')}</button>
           <Stepper id="cooldown" label={t('editor.cooldown')} value={d.cooldown} display={formatShort(d.cooldown)} step={30} limits={BLOCK_LIMIT} onChange={(v) => patch({ cooldown: v })} parse={parseDuration} />
+          {d.blocks.some((b) => b.callouts?.some((c) => c.trim())) && (
+            <>
+              <Stepper id="callout-every" label={t('editor.callouts.every')} value={d.calloutEvery} display={String(d.calloutEvery)} step={5} limits={CALLOUT_LIMITS.every} onChange={(v) => patch({ calloutEvery: v })} />
+              <label class="row"><span>{t('editor.callouts.order')}</span>
+                <select class="select" value={d.calloutOrder} aria-label={t('editor.callouts.order')} onChange={(e) => patch({ calloutOrder: (e.target as HTMLSelectElement).value as 'random' | 'sequence' })}>
+                  <option value="random">{t('editor.callouts.random')}</option>
+                  <option value="sequence">{t('editor.callouts.sequence')}</option>
+                </select></label>
+            </>
+          )}
+          <h2>{t('editor.groups')}</h2>
+          <div class="choices" role="radiogroup" aria-label={t('editor.groups.count')}>
+            {([1, 2, 3] as const).map((n) => (
+              <button key={n} type="button" role="radio" aria-checked={(d.groups?.count ?? 1) === n} class={`btn btn-sm ${(d.groups?.count ?? 1) === n ? 'btn-primary' : ''}`}
+                onClick={() => patch({ groups: n === 1 ? undefined : { count: n, offset: d.groups?.offset ?? 30 } })}>{n === 1 ? t('editor.groups.one') : `${n} ${t('editor.groups.count').toLowerCase()}`}</button>
+            ))}
+          </div>
+          {d.groups && <Stepper id="group-offset" label={t('editor.groups.offset')} value={d.groups.offset} display={String(d.groups.offset)} step={5} limits={GROUP_LIMITS.offset} onChange={(v) => patch({ groups: { ...d.groups!, offset: v } })} />}
         </>
       )}
       <Stepper id="prep" label={t('editor.prep')} value={d.prep} display={String(d.prep)} step={5} limits={LIMITS.prep} onChange={(v) => patch({ prep: v })} />

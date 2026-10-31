@@ -169,3 +169,61 @@ test('stop is never one tap away while running', async ({ page }) => {
   await page.getByRole('button', { name: 'Keep going' }).click();
   await expect(page.locator('main.run')).toBeVisible();
 });
+
+test('reaction drill with hidden clock and spoken combos, as a two-group class', async ({ page }) => {
+  await page.goto('./#/edit');
+  await page.getByPlaceholder('Sparring Tuesday').fill('Reaction');
+  await page.getByRole('button', { name: 'Advanced' }).click();
+  const block = page.locator('.block', { hasText: 'Block 1' });
+  await block.locator('.stepper', { hasText: 'Round time' }).locator('input').fill('0:20');
+  await block.locator('.stepper', { hasText: 'Round time' }).locator('input').press('Tab');
+  await block.locator('details', { hasText: 'Combo callouts' }).locator('summary').click();
+  await block.getByRole('button', { name: 'Intermediate' }).click();
+  await expect(block.getByLabel('Combos, one per line')).toHaveValue(/1 2 3/);
+  await expect(page.locator('.stepper', { hasText: 'Callout every' })).toBeVisible();
+  await block.locator('details', { hasText: 'Random reaction cues' }).locator('summary').click();
+  await block.getByLabel('Fire a cue at a random moment').check();
+  await block.getByLabel('Hide the clock during this block').check();
+  await page.getByRole('radio', { name: '2 groups' }).click();
+  await page.locator('.stepper', { hasText: 'Offset between groups' }).locator('input').fill('5');
+  await page.locator('.stepper', { hasText: 'Offset between groups' }).locator('input').press('Tab');
+  await page.getByRole('button', { name: 'Save as preset' }).click();
+  await expect(page.getByRole('button', { name: 'Preset saved' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Start' }).click();
+  const groups = page.locator('.group');
+  await expect(groups).toHaveCount(2);
+  await expect(groups.nth(0)).toContainText('Group 1');
+  await expect(groups.nth(1)).toContainText('Group 2');
+  // group 2 starts 5 s later: skip prep on both, group 1 is in work, group 2 still in prep (its prep is 15 s)
+  await page.getByRole('button', { name: 'Skip' }).click();
+  await expect(groups.nth(0)).toHaveClass(/phase-work/);
+  await expect(groups.nth(0).locator('.group-clock')).toHaveText('?'); // hidden clock
+  await expect(groups.nth(1)).toHaveClass(/phase-work/);
+  await page.getByRole('button', { name: 'Pause' }).click();
+  await expect(page.locator('main.run')).toHaveClass(/paused/);
+  await page.getByRole('button', { name: 'Resume' }).click();
+  // 3 rounds => work, rest, work, rest, work remain: 5 skips end both groups together
+  for (let i = 0; i < 5; i++) await page.getByRole('button', { name: 'Skip' }).click();
+  await expect(page.getByRole('heading', { name: 'Session complete' })).toBeVisible({ timeout: 8000 });
+});
+
+test('a custom sound upload replaces a built-in sound and can be reset', async ({ page }) => {
+  await page.goto('./#/settings');
+  // A tiny valid WAV (0.1 s of silence) generated on the fly.
+  const sr = 8000, n = 800;
+  const wav = Buffer.alloc(44 + n * 2);
+  wav.write('RIFF', 0); wav.writeUInt32LE(36 + n * 2, 4); wav.write('WAVE', 8); wav.write('fmt ', 12);
+  wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22); wav.writeUInt32LE(sr, 24);
+  wav.writeUInt32LE(sr * 2, 28); wav.writeUInt16LE(2, 32); wav.writeUInt16LE(16, 34); wav.write('data', 36); wav.writeUInt32LE(n * 2, 40);
+  await page.getByRole('button', { name: 'Upload: Boxing bell' }).click();
+  await page.getByLabel('Upload', { exact: true }).setInputFiles({ name: 'my-bell.wav', mimeType: 'audio/wav', buffer: wav });
+  await expect(page.locator('.custom-sounds li', { hasText: 'Boxing bell' })).toContainText('★');
+  await page.reload();
+  await expect(page.locator('.custom-sounds li', { hasText: 'Boxing bell' })).toContainText('★');
+  await page.locator('.custom-sounds li', { hasText: 'Boxing bell' }).getByRole('button', { name: 'Reset' }).click();
+  await expect(page.locator('.custom-sounds li', { hasText: 'Boxing bell' })).not.toContainText('★');
+  await page.getByRole('button', { name: 'Upload: Gong' }).click();
+  await page.getByLabel('Upload', { exact: true }).setInputFiles({ name: 'junk.wav', mimeType: 'audio/wav', buffer: Buffer.from('not audio at all') });
+  await expect(page.getByRole('alert')).toHaveText('That file could not be decoded as audio.');
+});

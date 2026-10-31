@@ -359,10 +359,12 @@ Nothing from v1 starts until the MVP gate passes on an Android phone, an iPhone 
 
 **v2 acceptance criteria**
 
-- [ ] Combo callouts read a user-editable list at a configurable cadence and difficulty
-- [ ] Random cue mode fires within the configured min/max window and can hide the clock
-- [ ] Two staggered groups run with an offset and both get their own bells and colors
-- [ ] A new locale can be added by contributing one JSON file; CI fails on missing keys
+- [x] Combo callouts read a user-editable list at a configurable cadence and difficulty — per-block list, three built-in numbered sets, cadence and random/sequence order; `plan.test.ts` pins the schedule, the journey builds one. Spoken output itself needs a real device, like the v1 voice criterion
+- [x] Random cue mode fires within the configured min/max window and can hide the clock — seeded per session, `plan.test.ts` checks every gap; the journey sees the hidden clock
+- [x] Two staggered groups run with an offset and both get their own bells and colors — one scheduler per group on the same clock, split-screen panels; the journey runs a two-group class. Pause, skip and stop apply to every group
+- [x] A new locale can be added by contributing one JSON file; CI fails on missing keys — `CONTRIBUTING.md`; `i18n.test.ts` runs in the deploy workflow
+- [ ] Voice control: "pause / go / skip / stop session" in each locale through Web Speech recognition, Chrome and Edge only, off by default. Needs a microphone, so untested here
+- [x] Custom sounds: any sound replaced by an uploaded file (IndexedDB, 1 MB cap, decoded before it is accepted); the journey uploads, reloads, resets and rejects a bad file
 
 ## Risks, edge cases and open questions
 
@@ -395,6 +397,9 @@ The web platform can match native on everything except deep background on iOS; t
 - Recorded samples: the audio engine looks for `public/sounds/<id>.mp3|ogg|wav` when the context unlocks and uses whatever decodes, keeping the synthesized sound as fallback. No files ship yet; the sandbox used for development cannot reach Freesound, Pixabay or Mixkit, so picking them is a manual step (CC0 or equivalent licence only, under 300 KB in total).
 - Share links: `#/s/<base64url JSON with short keys>`; `decodePlan` clamps every value and ignores unknown keys, so hostile or future links degrade to a valid plan or a clear error, never a crash.
 - QR codes: the only runtime dependency added is `uqr` (≈3 KB in the bundle) rendering an SVG client-side.
+- Random cues and callouts are compiled into the phase list with a per-session seed (`mulberry32`), so the scheduler stays a pure timestamp walker and a recovered page replays the same schedule.
+- Staggered groups: group *k* is the same plan with prep extended by *offset × k*, run by its own `Scheduler` on the shared clock. Controls act on all groups; a per-group skip is a possible later refinement.
+- Combo callouts use digits ("1 2 3 2") so one list works in every locale; words like "slip" and "roll" in the built-in sets are the only English, and a coach can replace them.
 
 **Still open**
 

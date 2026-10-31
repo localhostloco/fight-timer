@@ -123,3 +123,24 @@ h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; colo
 .run.tv.idle .controls, .run.tv.idle .run-bottom, .run.tv.idle .banner { opacity: 0; pointer-events: none; transition: opacity 300ms; }
 .run.tv .clock { font-size: min(36vw, 70vmin); }
 @media (orientation: landscape) { .run.tv .clock { font-size: min(32vw, 72vmin); } }
+
+/* v2 */
+h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 1.25rem 0 0.25rem; }
+.sub { border-top: 1px dashed var(--line); margin-top: 0.6rem; padding-top: 0.4rem; }
+.sub summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; }
+.field textarea { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); font: inherit; resize: vertical; }
+.custom-sounds { list-style: none; margin: 0; padding: 0; }
+.custom-sounds .choices { margin: 0; }
+.banner.listen { background: rgba(0,0,0,0.7); color: #fff; }
+.groups { display: flex; gap: 0.75rem; width: 100%; flex: 1; align-items: stretch; }
+.group { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem; border-radius: 18px; padding: 0.75rem; transition: background-color 150ms linear; color: var(--ink-on-color); }
+.group.phase-prep, .group.phase-warmup, .group.phase-cooldown { background: var(--prep); }
+.group.phase-work { background: var(--work); }
+.group.phase-rest { background: var(--rest); color: #fff; }
+.group.phase-finished { background: var(--paused); color: #fff; }
+.group-name { font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; font-size: clamp(0.9rem, 2.5vmin, 1.6rem); }
+.group-label { font-weight: 700; font-size: clamp(0.9rem, 2.5vmin, 1.6rem); text-align: center; }
+.clock.group-clock { font-size: min(14vw, 28vmin); }
+.groups:has(.group:nth-child(3)) .clock.group-clock { font-size: min(10vw, 22vmin); }
+@media (orientation: portrait) { .groups { flex-direction: column; } .clock.group-clock, .groups:has(.group:nth-child(3)) .clock.group-clock { font-size: min(30vw, 18vh); } }
+.run.paused .group { filter: saturate(0.3); }

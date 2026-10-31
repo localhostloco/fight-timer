@@ -2,7 +2,9 @@ import { navigate } from '../router';
 import { LOCALES, t, type Locale } from '../i18n';
 import { resetAll, settings, updateSettings } from '../store/settings';
 import { userPresets } from '../store/presets';
-import { audio, enableSound, speak, voice } from '../store/session';
+import { audio, enableSound, listener, speak, voice } from '../store/session';
+import { MAX_BYTES, customIds, listCustom, putCustom, removeCustom } from '../store/customSounds';
+import { useEffect } from 'preact/hooks';
 import { exportPresets, importPresets, downloadText } from '../store/transfer';
 import { useRef, useState } from 'preact/hooks';
 import { history, clearHistory } from '../store/history';
@@ -13,6 +15,23 @@ export function Settings() {
   const fileInput = useRef<HTMLInputElement>(null);
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const voices = voice.voicesFor(s.locale);
+  const [soundMsg, setSoundMsg] = useState<string | null>(null);
+  const uploadFor = useRef<Sound | null>(null);
+  const soundInput = useRef<HTMLInputElement>(null);
+  useEffect(() => { void listCustom(); }, []);
+  const onSoundFile = async (e: Event) => {
+    const f = (e.target as HTMLInputElement).files?.[0]; const id = uploadFor.current;
+    (e.target as HTMLInputElement).value = '';
+    if (!f || !id) return;
+    if (f.size > MAX_BYTES) { setSoundMsg(t('settings.customSounds.big')); return; }
+    await enableSound();
+    if (!(await audio.canDecode(await f.arrayBuffer()))) { setSoundMsg(t('settings.customSounds.bad')); return; }
+    await putCustom(id, f);
+    await audio.loadCustom([id]);
+    setSoundMsg(null);
+    audio.play(id);
+  };
+  const commandWords = (['cmd.pause', 'cmd.resume', 'cmd.skip', 'cmd.stop'] as const).map((k) => t(k).split(',')[0]!.trim()).join(' · ');
   const onImportFile = async (e: Event) => {
     const f = (e.target as HTMLInputElement).files?.[0];
     if (!f) return;
@@ -56,6 +75,21 @@ export function Settings() {
           ))}
         </div>
         {toggle('vibrate')}
+        <h3>{t('settings.customSounds')}</h3>
+        <p class="muted">{t('settings.customSounds.hint')}</p>
+        <ul class="custom-sounds">
+          {SOUNDS.filter((x) => x !== 'none').map((x) => (
+            <li key={x} class="row">
+              <span>{t(`sound.name.${x}` as const)}{customIds.value.includes(x) ? ' ★' : ''}</span>
+              <span class="choices">
+                <button class="btn btn-sm" onClick={() => { uploadFor.current = x; soundInput.current?.click(); }} aria-label={`${t('settings.customSounds.upload')}: ${t(`sound.name.${x}` as const)}`}>{t('settings.customSounds.upload')}</button>
+                {customIds.value.includes(x) && <button class="btn btn-sm" onClick={async () => { await removeCustom(x); await audio.loadCustom([x]); }}>{t('settings.customSounds.reset')}</button>}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <input ref={soundInput} type="file" accept="audio/*,.mp3,.ogg,.wav" hidden onChange={onSoundFile} aria-label={t('settings.customSounds.upload')} />
+        {soundMsg && <p class="banner warn" role="alert">{soundMsg}</p>}
       </section>
 
       <section>
@@ -80,6 +114,13 @@ export function Settings() {
         <h2>{t('settings.display')}</h2>
         {toggle('keepAwake')}
         {toggle('showTenths')}
+        {listener.supported ? (
+          <>
+            <label class="row"><span>{t('settings.voiceControl')}</span>
+              <input type="checkbox" checked={s.voiceControl} onChange={(e) => updateSettings({ voiceControl: (e.target as HTMLInputElement).checked })} /></label>
+            <p class="muted">{t('settings.voiceControl.hint', { words: commandWords })}</p>
+          </>
+        ) : <p class="muted">{t('settings.voiceControl.unsupported')}</p>}
         <label class="row"><span>{t('settings.tvMode')}</span>
           <input type="checkbox" checked={s.tvMode} onChange={(e) => updateSettings({ tvMode: (e.target as HTMLInputElement).checked })} /></label>
       </section>

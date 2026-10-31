@@ -5,6 +5,7 @@
 
 import { SOUNDS, type Sound } from './plan';
 import { generate } from './sounds';
+import { getCustom, listCustom } from '../store/customSounds';
 
 type Ctx = AudioContext;
 
@@ -35,7 +36,7 @@ export class AudioEngine {
       this.gain.gain.value = this.volume;
       this.gain.connect(this.ctx.destination);
       for (const s of SOUNDS) this.buffers.set(s, synth(this.ctx, s));
-      void this.loadSamples();
+      void this.loadSamples().then(() => this.loadCustom());
     }
     if (this.ctx.state !== 'running') { try { await this.ctx.resume(); } catch { /* blocked until a gesture */ } }
     return this.ready;
@@ -62,6 +63,24 @@ export class AudioEngine {
         } catch { /* try next extension, then keep the synth */ }
       }
     }));
+  }
+
+  /** Custom uploads win over shipped samples and synth. Called on unlock and after an upload. */
+  async loadCustom(ids?: Sound[]): Promise<void> {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const list = ids ?? (await listCustom());
+    await Promise.all(list.map(async (id) => {
+      const c = await getCustom(id);
+      if (!c) { this.buffers.set(id, synth(ctx, id)); return; }
+      try { this.buffers.set(id, await ctx.decodeAudioData(c.data.slice(0))); } catch { /* keep current buffer */ }
+    }));
+  }
+
+  /** Decode a file to prove it plays before storing it. */
+  async canDecode(data: ArrayBuffer): Promise<boolean> {
+    if (!this.ctx) return false;
+    try { await this.ctx.decodeAudioData(data.slice(0)); return true; } catch { return false; }
   }
 
   setVolume(v: number): void {
