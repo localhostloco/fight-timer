@@ -30,13 +30,18 @@ h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; colo
 
 .cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.6rem; }
 .card { background: var(--panel); border: 1px solid var(--line); border-left: 6px solid var(--accent); border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; }
-.card-main { all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 0.2rem; padding: 0.9rem 1rem; min-height: 72px; }
+.card-main { all: unset; cursor: pointer; display: flex; align-items: center; gap: 0.9rem; padding: 0.9rem 1rem; min-height: 72px; }
+.card-text { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.sport-icon { flex: none; color: var(--sport, var(--accent)); }
 .card-main:active { background: rgba(255,255,255,0.06); }
 .card-name { font-weight: 700; font-size: 1.05rem; }
 .card-summary { color: var(--muted); font-variant-numeric: tabular-nums; }
 .card-actions { display: flex; gap: 0.4rem; padding: 0 0.75rem 0.75rem; }
-.sport-boxing { border-left-color: #e74c3c; } .sport-mma { border-left-color: #9b59b6; } .sport-muaythai { border-left-color: #f39c12; }
-.sport-kickboxing { border-left-color: #e67e22; } .sport-bjj { border-left-color: #3498db; } .sport-wrestling { border-left-color: #1abc9c; } .sport-hiit { border-left-color: #f1c40f; }
+.sport-boxing { --sport: #e74c3c; } .sport-mma { --sport: #9b59b6; } .sport-muaythai { --sport: #f39c12; } .sport-kickboxing { --sport: #e67e22; }
+.sport-bjj { --sport: #3498db; } .sport-wrestling { --sport: #1abc9c; } .sport-hiit { --sport: #f1c40f; } .sport-custom { --sport: var(--muted); }
+.card { border-left-color: var(--sport, var(--accent)); }
+.btn-sport { display: inline-flex; align-items: center; gap: 0.4rem; }
+.btn-sport.selected { border-color: var(--sport); color: var(--fg); background: color-mix(in srgb, var(--sport) 18%, var(--panel)); }
 
 .field { display: flex; flex-direction: column; gap: 0.3rem; margin: 1rem 0; }
 .field input { width: 100%; min-width: 0; min-height: 48px; padding: 0.5rem 0.75rem; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); }
