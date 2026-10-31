@@ -19,8 +19,8 @@ describe('compile', () => {
 
   it('gives rest the end bell, seconds-out warning and a 3-2-1 countdown', () => {
     const [, , rest] = compile(simplePlan({ rounds: 2, work: 180, rest: 60 }));
-    expect(rest!.cues.map((c) => [c.offset, c.sound, c.kind])).toEqual([
-      [0, 'bell', 'start'], [50, 'beep', 'warning'], [57, 'beep', 'countdown'], [58, 'beep', 'countdown'], [59, 'beep', 'countdown'],
+    expect(rest!.cues.map((c) => [c.offset, c.sound, c.kind, c.voice])).toEqual([
+      [0, 'bell', 'start', undefined], [50, 'beep', 'warning', 'voice.seconds_out'], [57, 'beep', 'countdown', '3'], [58, 'beep', 'countdown', '2'], [59, 'beep', 'countdown', '1'],
     ]);
   });
 
@@ -49,6 +49,12 @@ describe('compile', () => {
     plan.cues = [{ at: 30, sound: 'clack' }, { at: 0, sound: 'beep', repeatEvery: 30 }];
     const [work] = compile(plan);
     expect(work!.cues).toEqual([{ offset: 0, sound: 'bell', kind: 'start' }, { offset: 30, sound: 'clack', kind: 'warning' }]);
+  });
+
+  it('speaks the block label and note at round start', () => {
+    const plan = simplePlan({ rounds: 1, work: 60, rest: 0, prep: 0 });
+    plan.blocks[0]!.label = 'Sparring'; plan.blocks[0]!.note = 'Southpaw';
+    expect(compile(plan)[0]!.cues[0]).toMatchObject({ kind: 'start', voice: 'Sparring. Southpaw' });
   });
 
   it('clamps out-of-range inputs', () => {

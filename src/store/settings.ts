@@ -7,6 +7,8 @@ export interface Settings {
   vibrate: boolean;
   keepAwake: boolean;
   showTenths: boolean;
+  tvMode: boolean;
+  voice: { enabled: boolean; name?: string; rate: number };
   theme: 'dark';
   lastPlanId?: string;
 }
@@ -21,6 +23,8 @@ const defaults = (): Settings => ({
   vibrate: true,
   keepAwake: true,
   showTenths: false,
+  tvMode: false,
+  voice: { enabled: false, rate: 1 },
   theme: 'dark',
 });
 
@@ -31,7 +35,7 @@ export function loadSettings(storage: Storage | null = safeStorage()): Settings 
     const raw = storage.getItem(SETTINGS_KEY);
     if (!raw) return d;
     const parsed = JSON.parse(raw) as Partial<Settings>;
-    return { ...d, ...parsed };
+    return { ...d, ...parsed, voice: { ...d.voice, ...(parsed.voice ?? {}) } };
   } catch { return d; }
 }
 

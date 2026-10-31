@@ -9,6 +9,8 @@ describe('parseRoute', () => {
     expect(parseRoute('#/edit/builtin.mma')).toEqual({ name: 'edit', id: 'builtin.mma' });
     expect(parseRoute('#/run')).toEqual({ name: 'run' });
     expect(parseRoute('#/settings')).toEqual({ name: 'settings' });
+    expect(parseRoute('#/s/abc_-')).toEqual({ name: 'share', payload: 'abc_-' });
+    expect(parseRoute('#/s')).toEqual({ name: 'home' });
     expect(parseRoute('#/nope')).toEqual({ name: 'home' });
   });
 });

@@ -141,8 +141,7 @@ function expandCues(cues: Cue[], duration: number, kind: PhaseCue['kind']): Phas
 /** 3-2-1 countdown beeps at the end of a phase that leads into work. */
 function countdownCues(duration: number, sound: Sound): PhaseCue[] {
   const out: PhaseCue[] = [];
-  if (sound === 'none') return out;
-  for (const s of [3, 2, 1]) if (s < duration) out.push({ offset: duration - s, sound, kind: 'countdown' });
+  for (const s of [3, 2, 1]) if (s < duration) out.push({ offset: duration - s, sound, kind: 'countdown', voice: String(s) });
   return out;
 }
 
@@ -154,7 +153,9 @@ function sortCues(cues: PhaseCue[]): PhaseCue[] {
   for (const c of sorted) {
     const last = merged[merged.length - 1];
     if (last && Math.abs(last.offset - c.offset) < 0.3) {
-      if (prio[c.kind] > prio[last.kind]) merged[merged.length - 1] = c;
+      const keep = prio[c.kind] > prio[last.kind] ? c : last;
+      const drop = keep === c ? last : c;
+      merged[merged.length - 1] = keep.voice || !drop.voice ? keep : { ...keep, voice: drop.voice };
       continue;
     }
     merged.push(c);
@@ -186,7 +187,8 @@ export function compile(plan: SessionPlan): Phase[] {
     for (let i = 0; i < block.count; i++) {
       round += 1;
       const isLast = round === total;
-      const workCues: PhaseCue[] = [{ offset: 0, sound: s.start, kind: 'start' }];
+      const startVoice = [block.label, block.note].filter(Boolean).join('. ');
+      const workCues: PhaseCue[] = [{ offset: 0, sound: s.start, kind: 'start', voice: startVoice || undefined }];
       workCues.push(...expandCues(block.cues ?? plan.cues, block.work, 'warning'));
       phases.push({
         kind: 'work', index: round, total, duration: block.work,

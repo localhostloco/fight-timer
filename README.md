@@ -2,7 +2,7 @@
 
 Free, offline, multilanguage round timer for fight coaches — boxing, MMA, Muay Thai, BJJ, HIIT. A static PWA hosted on GitHub Pages.
 
-Status: **MVP** (simple mode, bells and 10-second clapper on the Web Audio clock, wake lock, offline PWA, pt-BR / en / es, built-in and saved presets). See [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md) for research, features, UI, architecture, data model and the roadmap with its acceptance criteria. `CLAUDE.md` holds the working rules for coding sessions.
+Status: **v1** — everything in the MVP (simple mode, bells and 10-second clapper on the Web Audio clock, wake lock, offline PWA, pt-BR / en / es, built-in and saved presets) plus advanced mode with variable round blocks, labels and notes, warm-up and cool-down, share links with QR codes, TV mode and full screen, spoken countdown and notes, preset import/export and a local session history. See [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md) for research, features, UI, architecture, data model and the roadmap with its acceptance criteria. `CLAUDE.md` holds the working rules for coding sessions.
 
 Live: https://localhostloco.github.io/fight-timer/
 
@@ -16,6 +16,11 @@ npm run build      # dist/ with service worker and manifest, base /fight-timer/
 npm run test:e2e   # Playwright against a GitHub-Pages-like static server (scripts/serve-pages.mjs)
 npm run check      # typecheck + test + build
 npm run sounds     # render every sound to test-results/sounds/*.wav
+```
+
+Recorded sounds: drop `bell.mp3`, `gong.mp3`, … (or `.ogg`/`.wav`) into `public/sounds/` and they replace the synthesized versions; anything missing keeps the synth.
+
+```sh
 ```
 
 ## Deploy
