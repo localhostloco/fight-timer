@@ -21,11 +21,11 @@ function render(sr: number, seconds: number, fn: (t: number, noise: () => number
   return out;
 }
 
-/** One-pole low-pass on a noise source, for strike transients and air. */
+/** Two cascaded one-pole low-passes (12 dB/oct) on a noise source: a dull thud, not static. */
 function lowpass(cutoffHz: number, sr: number) {
   const a = Math.exp(-TAU * cutoffHz / sr);
-  let y = 0;
-  return (x: number) => (y = a * y + (1 - a) * x);
+  let y1 = 0, y2 = 0;
+  return (x: number) => { y1 = a * y1 + (1 - a) * x; y2 = a * y2 + (1 - a) * y1; return y2; };
 }
 
 /** A struck metal body: partials × exponential decay, plus a filtered-noise strike. */
@@ -52,8 +52,8 @@ const CHIME: Partial[] = [[1, 1, 1.8], [2.76, 0.4, 1.2], [5.4, 0.18, 0.6], [8.9,
 
 function bellHit(t: number, noise: () => number, lp: (x: number) => number): number {
   const body = strike(t, 880, BOXING_BELL);
-  const clank = t < 0.03 ? lp(noise()) * (1 - t / 0.03) * 1.4 : 0;
-  return body * 0.42 + clank;
+  const clank = t >= 0 && t < 0.012 ? lp(noise()) * (1 - t / 0.012) * 0.35 : 0;
+  return body * 0.45 + clank;
 }
 
 export const SOUND_SECONDS: Record<Sound, number> = {
@@ -63,31 +63,31 @@ export const SOUND_SECONDS: Record<Sound, number> = {
 export function generate(sound: Sound, sr: number): Float32Array<ArrayBuffer> | null {
   switch (sound) {
     case 'bell': { // classic ring bell, struck twice
-      const lp = lowpass(3500, sr);
+      const lp = lowpass(1800, sr);
       return render(sr, SOUND_SECONDS.bell, (t, n) => bellHit(t, n, lp) + bellHit(t - 0.22, n, lp));
     }
     case 'bell3': { // end of fight: three quick strikes
-      const lp = lowpass(3500, sr);
+      const lp = lowpass(1800, sr);
       return render(sr, SOUND_SECONDS.bell3, (t, n) => bellHit(t, n, lp) + bellHit(t - 0.26, n, lp) + bellHit(t - 0.52, n, lp));
     }
     case 'gong': {
-      const lp = lowpass(900, sr);
+      const lp = lowpass(400, sr);
       return render(sr, SOUND_SECONDS.gong, (t, n) => {
         const swell = Math.min(1, t / 0.06);
         const body = strike(t, 98, GONG, 0.02, 0.004) * swell;
-        const mallet = t < 0.08 ? lp(n()) * (1 - t / 0.08) * 0.8 : 0;
+        const mallet = t < 0.04 ? lp(n()) * (1 - t / 0.04) * 0.25 : 0;
         return body * 0.5 + mallet;
       });
     }
     case 'horn': { // air horn: reedy stack with breath noise, pitch sag at the end
-      const lp = lowpass(2500, sr);
+      const lp = lowpass(1200, sr);
       return render(sr, SOUND_SECONDS.horn, (t, n) => {
         const dur = SOUND_SECONDS.horn;
         const sag = t > dur - 0.15 ? 1 - (t - (dur - 0.15)) * 0.4 : 1;
         const f = 466 * sag * (1 + 0.006 * Math.sin(TAU * 5.5 * t));
         let v = 0;
         for (let h = 1; h <= 10; h++) v += Math.sin(TAU * f * h * t + h) / Math.pow(h, 0.8);
-        const air = lp(n()) * 0.25;
+        const air = lp(n()) * 0.03;
         const env = t < 0.04 ? t / 0.04 : t > dur - 0.08 ? (dur - t) / 0.08 : 1;
         return (v * 0.22 + air) * env;
       });
@@ -104,23 +104,23 @@ export function generate(sound: Sound, sr: number): Float32Array<ArrayBuffer> | 
       });
     }
     case 'whistle': { // referee pea whistle: fast amplitude trill on a bright tone
-      const lp = lowpass(6000, sr);
+      const lp = lowpass(3000, sr);
       return render(sr, SOUND_SECONDS.whistle, (t, n) => {
         const dur = SOUND_SECONDS.whistle;
         const trill = 0.55 + 0.45 * Math.sin(TAU * 38 * t);
         const f = 2750 + 25 * Math.sin(TAU * 38 * t);
         const tone = Math.sin(TAU * f * t) + 0.3 * Math.sin(TAU * f * 2.01 * t);
-        const breath = lp(n()) * 0.12;
+        const breath = lp(n()) * 0.025;
         const env = t < 0.02 ? t / 0.02 : t > dur - 0.12 ? (dur - t) / 0.12 : 1;
         return (tone * 0.4 * trill + breath) * env;
       });
     }
     case 'clack': { // wooden clapper: two bright knocks with body resonance
-      const lp = lowpass(4500, sr);
+      const lp = lowpass(2200, sr);
       const knock = (t: number, n: () => number) => {
         if (t < 0) return 0;
         const res = Math.sin(TAU * 1250 * t) * Math.exp(-t * 55) + 0.5 * Math.sin(TAU * 2900 * t) * Math.exp(-t * 90);
-        const crack = t < 0.012 ? lp(n()) * (1 - t / 0.012) * 1.6 : 0;
+        const crack = t < 0.006 ? lp(n()) * (1 - t / 0.006) * 0.6 : 0;
         return res * 0.7 + crack;
       };
       return render(sr, SOUND_SECONDS.clack, (t, n) => knock(t, n) + knock(t - 0.28, n));
@@ -128,11 +128,11 @@ export function generate(sound: Sound, sr: number): Float32Array<ArrayBuffer> | 
     case 'chime': // soft bar chime for inner-round alerts
       return render(sr, SOUND_SECONDS.chime, (t) => strike(t, 1320, CHIME, 0.004, 0.001) * 0.35);
     case 'drum': { // floor tom hit: pitch drop + skin noise
-      const lp = lowpass(1200, sr);
+      const lp = lowpass(500, sr);
       return render(sr, SOUND_SECONDS.drum, (t, n) => {
         const f = 70 + 110 * Math.exp(-t * 28);
         const body = Math.sin(TAU * f * t) * Math.exp(-t * 7);
-        const skin = lp(n()) * Math.exp(-t * 40) * 0.9;
+        const skin = lp(n()) * Math.exp(-t * 60) * 0.3;
         return body * 0.9 + skin;
       });
     }
