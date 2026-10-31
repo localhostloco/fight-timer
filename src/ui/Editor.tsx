@@ -3,23 +3,28 @@ import { navigate } from '../router';
 import { t, fmtMinutes } from '../i18n';
 import { findPreset, savePreset } from '../store/presets';
 import { settings } from '../store/settings';
-import { LIMITS, clamp, compile, formatShort, simplePlan, totals, type SessionPlan } from '../engine/plan';
-import { startSession } from '../store/session';
+import { DEFAULT_SOUNDS, LIMITS, SOUNDS, clamp, compile, formatShort, simplePlan, totals, type SessionPlan, type Sound } from '../engine/plan';
+import { audio, enableSound, startSession } from '../store/session';
 import { planName } from './Home';
 import { SoundGate } from './SoundGate';
 
-interface Draft { name: string; rounds: number; work: number; rest: number; prep: number; warn: number }
+type Sounds = Required<SessionPlan['sounds']>;
+interface Draft { name: string; rounds: number; work: number; rest: number; prep: number; warn: number; sounds: Sounds }
+
+const SOUND_EVENTS = ['start', 'end', 'warning', 'countdown', 'final'] as const;
+const DEFAULT_DRAFT_SOUNDS = DEFAULT_SOUNDS as Sounds;
 
 function toDraft(p: SessionPlan): Draft {
   const b = p.blocks[0]!;
-  return { name: p.builtIn ? planName(p) : p.name, rounds: b.count, work: b.work, rest: b.rest, prep: p.prep, warn: p.cues[0]?.at ?? 10 };
+  const sounds: Sounds = { ...DEFAULT_DRAFT_SOUNDS, ...p.sounds, warning: p.cues[0]?.sound ?? p.sounds.warning ?? 'clack' };
+  return { name: p.builtIn ? planName(p) : p.name, rounds: b.count, work: b.work, rest: b.rest, prep: p.prep, warn: p.cues[0]?.at ?? 10, sounds };
 }
 
 function toPlan(d: Draft, base?: SessionPlan): SessionPlan {
   const plan = simplePlan({ rounds: d.rounds, work: d.work, rest: d.rest, prep: d.prep, name: d.name, sport: base?.sport });
   if (base && !base.builtIn) plan.id = base.id;
-  plan.sounds = base?.sounds ?? plan.sounds;
-  plan.cues = d.warn > 0 ? [{ at: d.warn, sound: 'clack' }] : [];
+  plan.sounds = { ...d.sounds };
+  plan.cues = d.warn > 0 ? [{ at: d.warn, sound: d.sounds.warning }] : [];
   return plan;
 }
 
@@ -49,7 +54,7 @@ function Stepper(props: { label: string; value: number; display: string; step: n
 
 export function Editor({ id }: { id?: string }) {
   const base = id ? findPreset(id) : undefined;
-  const [d, setD] = useState<Draft>(() => base ? toDraft(base) : { name: '', rounds: 3, work: 180, rest: 60, prep: 10, warn: 10 });
+  const [d, setD] = useState<Draft>(() => base ? toDraft(base) : { name: '', rounds: 3, work: 180, rest: 60, prep: 10, warn: 10, sounds: { ...DEFAULT_DRAFT_SOUNDS } });
   const [saved, setSaved] = useState(false);
   const plan = useMemo(() => toPlan(d, base), [d, base]);
   const tot = totals(compile(plan));
@@ -86,6 +91,21 @@ export function Editor({ id }: { id?: string }) {
       <Stepper label={t('editor.rest')} value={d.rest} display={formatShort(d.rest)} step={15} limits={LIMITS.rest} onChange={(v) => patch({ rest: v })} minus={t('editor.minus')} plus={t('editor.plus')} parse={parseDuration} />
       <Stepper label={t('editor.prep')} value={d.prep} display={String(d.prep)} step={5} limits={LIMITS.prep} onChange={(v) => patch({ prep: v })} minus={t('editor.minus')} plus={t('editor.plus')} />
       <Stepper label={t('editor.warning')} value={d.warn} display={String(d.warn)} step={5} limits={{ min: 0, max: 60 }} onChange={(v) => patch({ warn: v })} minus={t('editor.minus')} plus={t('editor.plus')} />
+
+      <h2>{t('settings.sounds')}</h2>
+      {SOUND_EVENTS.map((ev) => (
+        <label class="row" key={ev}>
+          <span>{t(`sound.${ev}` as const)}</span>
+          <select class="select" value={d.sounds[ev]} aria-label={t(`sound.${ev}` as const)}
+            onChange={async (e) => {
+              const v = (e.target as HTMLSelectElement).value as Sound;
+              patch({ sounds: { ...d.sounds, [ev]: v } });
+              if (await enableSound()) audio.play(v);
+            }}>
+            {SOUNDS.map((x) => <option key={x} value={x}>{t(`sound.name.${x}` as const)}</option>)}
+          </select>
+        </label>
+      ))}
 
       <nav class="bottombar">
         <button class="btn" onClick={save}>{saved ? t('editor.saved') : t('editor.save')}</button>

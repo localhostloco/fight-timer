@@ -70,7 +70,11 @@ h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; colo
 .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; width: 100%; }
 .btn-ctl { min-height: 56px; min-width: 96px; background: rgba(0,0,0,0.35); border-color: rgba(0,0,0,0.2); color: #fff; font-weight: 700; }
 .btn-ctl.btn-danger { background: rgba(0,0,0,0.55); }
-.btn-ctl.holding { background: #fff; color: #000; }
+.btn-hold { position: relative; overflow: hidden; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.btn-hold::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(255,255,255,0.45); pointer-events: none; }
+.btn-hold.holding::after { animation: holdfill var(--hold-ms, 1000ms) linear forwards; }
+@keyframes holdfill { to { width: 100%; } }
+.btn-ctl.holding { color: #000; background: #fff; }
 .btn-wide { flex: 1; }
 .banner { background: rgba(0,0,0,0.6); color: #fff; padding: 0.5rem 0.75rem; border-radius: 10px; font-size: 0.95rem; width: 100%; text-align: center; }
 .banner.warn { background: #000; color: var(--prep); }
@@ -87,5 +91,6 @@ h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; colo
 .row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 48px; padding: 0.4rem 0; border-bottom: 1px solid var(--line); }
 .row input[type=checkbox] { width: 28px; height: 28px; accent-color: var(--accent); }
 .row input[type=range] { flex: 1; max-width: 50%; accent-color: var(--accent); }
+.select { min-height: 44px; padding: 0.4rem 0.75rem; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); max-width: 55%; }
 .choices { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0; }
 .toast { position: fixed; left: 50%; bottom: calc(6rem + env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: 0.75rem; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 0.6rem 1rem; z-index: 10; }

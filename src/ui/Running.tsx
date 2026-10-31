@@ -13,11 +13,19 @@ const phaseKey = (k: PhaseKind) => PHASE_KEY[k];
 function Hold({ ms, onHold, class: cls, children, label }: { ms: number; onHold: () => void; class?: string; children: ComponentChildren; label: string }) {
   const timer = useRef(0);
   const [holding, setHolding] = useState(false);
-  const down = (e: Event) => { e.stopPropagation(); setHolding(true); timer.current = window.setTimeout(() => { setHolding(false); onHold(); }, ms); };
+  // Touch long-presses fire contextmenu/selection and then pointercancel, which
+  // would abort the hold: touch-action none (CSS), no callout, and no context menu.
+  const down = (e: PointerEvent) => {
+    e.stopPropagation(); e.preventDefault();
+    try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* synthetic or unknown pointer */ }
+    setHolding(true);
+    clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => { setHolding(false); onHold(); }, ms);
+  };
   const up = (e: Event) => { e.stopPropagation(); setHolding(false); clearTimeout(timer.current); };
   return (
-    <button class={`${cls ?? ''} ${holding ? 'holding' : ''}`} aria-label={label} title={label}
-      onPointerDown={down} onPointerUp={up} onPointerLeave={up} onPointerCancel={up} onClick={(e) => e.stopPropagation()}
+    <button class={`btn-hold ${cls ?? ''} ${holding ? 'holding' : ''}`} aria-label={label} title={label} style={{ '--hold-ms': `${ms}ms` }}
+      onPointerDown={down} onPointerUp={up} onPointerCancel={up} onContextMenu={(e) => e.preventDefault()} onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onHold(); } }}>
       {children}
     </button>
@@ -103,7 +111,7 @@ export function Running() {
             <button class="btn btn-ctl" onClick={restartPhase}>↺ {t('run.restart')}</button>
             <button class="btn btn-ctl" onClick={skipPhase}>⏭ {t('run.skip')}</button>
             <button class="btn btn-ctl" onClick={() => setLocked(true)}>🔓 {t('run.lock')}</button>
-            <Hold ms={1000} onHold={() => setConfirmStop(true)} class="btn btn-ctl btn-danger" label={t('run.stop.hold')}>■ {t('run.stop')}</Hold>
+            <Hold ms={1000} onHold={() => setConfirmStop(true)} class="btn btn-ctl btn-danger" label={t('run.stop.hold')}>■ {t('run.stop.hold')}</Hold>
           </>
         )}
       </div>

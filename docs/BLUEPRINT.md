@@ -53,7 +53,7 @@ These are the features every credible competitor ships; missing any one of them 
 - End-of-rest warning ("seconds out") so fighters get back to position
 - Repeating inner-round alert (e.g. every 30 s or 60 s) to signal pace changes or partner switches
 - 3-2-1 voice or beep countdown into each round
-- Sound library: boxing bell, gong, air horn, whistle, wood clack, beep; per-event sound selection
+- Sound library: boxing bell, triple bell, gong, air horn, buzzer, whistle, wood clack, chime, drum, beep; per-event sound selection (round start, round end, warning, countdown, end of session) in the editor
 - Volume control inside the app, independent of music; vibration/haptics where the browser allows
 
 **Presets**
@@ -389,7 +389,7 @@ The web platform can match native on everything except deep background on iOS; t
 
 - Default locale when the browser language is unknown: **en** (`DEFAULT_LOCALE` in `src/i18n/index.ts`). pt, es and en browser languages map to their locale.
 - UI library: **Preact + signals**, as recommended.
-- Sounds: **all synthesized** in `src/engine/audio.ts` (bell, gong, horn, whistle, clapper, beep as Web Audio buffers rendered once per session). The whole precache is 82 KB. Recorded CC0 samples remain an option: drop files in `public/sounds/` and decode them into the same buffer map.
+- Sounds: **all synthesized** in `src/engine/sounds.ts` (pure generators, unit-tested) and rendered once per session into Web Audio buffers by `src/engine/audio.ts`. Ten sounds: boxing bell, triple bell, gong, air horn, buzzer, referee whistle, wood clapper, chime, drum, beep. Bells and gong use modal synthesis (measured partial ratios, detuned pairs for beating, filtered-noise strike) through a soft limiter. `npm run sounds` renders them to WAV for auditioning. The whole precache is 86 KB. Recorded CC0 samples remain an option: drop files in `public/sounds/` and decode them into the same buffer map.
 - Hosting: GitHub Pages project site under `/fight-timer/`. The base is the single `BASE_PATH` env read in `vite.config.ts`; a custom domain later means building with `BASE_PATH=/`.
 - Analytics: none.
 
